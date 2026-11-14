@@ -1,4 +1,11 @@
 import type { RemoteAuthEvent } from "@openbot/contracts/signal-protocol/auth-events";
+import {
+  STANDARD_WEBHOOK_HEADER_SETS,
+  WEBHOOK_DELIVERY_ID_HEADER,
+  WEBHOOK_ROUTE_ID_PATTERN,
+  WEBHOOK_SIGNATURE_HEADER,
+  WEBHOOK_TIMESTAMP_HEADER,
+} from "@openbot/contracts/signal-protocol/webhook-route";
 import { SignalRoom } from "./signal-room";
 
 export { SignalRoom };
@@ -33,6 +40,36 @@ export default {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body,
+        }),
+      );
+    }
+    const webhookPrefix = "/v1/webhooks/";
+    if (request.method === "POST" && url.pathname.startsWith(webhookPrefix)) {
+      const routeId = url.pathname.slice(webhookPrefix.length);
+      if (!WEBHOOK_ROUTE_ID_PATTERN.test(routeId)) return new Response("Not found.", { status: 404 });
+      const body = await request.arrayBuffer();
+      if (body.byteLength > 64 * 1024) return new Response("Webhook body is too large.", { status: 413 });
+      const standard = STANDARD_WEBHOOK_HEADER_SETS.some(
+        (headers) =>
+          request.headers.has(headers.deliveryId) &&
+          request.headers.has(headers.timestamp) &&
+          request.headers.has(headers.signature),
+      );
+      const delivery = {
+        requestId: crypto.randomUUID(),
+        routeId,
+        timestamp: request.headers.get(standard ? "webhook-timestamp" : WEBHOOK_TIMESTAMP_HEADER) ?? "",
+        deliveryId: request.headers.get(standard ? "webhook-id" : WEBHOOK_DELIVERY_ID_HEADER) ?? "",
+        signature: request.headers.get(standard ? "webhook-signature" : WEBHOOK_SIGNATURE_HEADER) ?? "",
+        bodyBase64: encodeBase64(new Uint8Array(body)),
+        ...(standard ? { format: "standard-webhooks" as const } : {}),
+      };
+      const id = env.SIGNAL_ROOM.idFromName("global");
+      return env.SIGNAL_ROOM.get(id).fetch(
+        new Request("https://signal-room.internal/internal/webhook-delivery", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(delivery),
         }),
       );
     }
@@ -73,6 +110,12 @@ function decodeBase64Url(value: string): ArrayBuffer {
   const buffer = new ArrayBuffer(bytes.length);
   new Uint8Array(buffer).set(Uint8Array.from(bytes, (character) => character.charCodeAt(0)));
   return buffer;
+}
+
+function encodeBase64(bytes: Uint8Array): string {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
 }
 
 function readAuthEvent(value: unknown): RemoteAuthEvent {

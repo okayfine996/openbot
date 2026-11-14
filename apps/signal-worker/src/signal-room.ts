@@ -2,13 +2,15 @@ import type { RemoteAuthEvent } from "@openbot/contracts/signal-protocol/auth-ev
 import type { IceServer, SignalChannel, SignalProtocolVersion } from "@openbot/contracts/signal-protocol/messages";
 import { SIGNAL_MESSAGE_BYTES_LIMIT, SIGNAL_PROTOCOL_VERSION } from "@openbot/contracts/signal-protocol/messages";
 import type { RemoteTicketClaims } from "@openbot/contracts/signal-protocol/ticket";
+import type { WebhookSignatureFormat } from "@openbot/contracts/signal-protocol/webhook-route";
+import { WEBHOOK_ROUTE_AUDIENCE, WEBHOOK_ROUTE_ID_PATTERN } from "@openbot/contracts/signal-protocol/webhook-route";
 import { type AuthenticatedTicket, SignalAuthError, SignalAuthenticator } from "./auth";
 
 const RECONNECT_GRACE_MS = 30_000;
 const MAX_CONNECTIONS_PER_HOST = 32;
 const MAX_MESSAGES_PER_MINUTE = 600;
 
-type PeerKind = "host" | "client";
+type PeerKind = "host" | "client" | "ingress";
 type Peer = {
   socket: WebSocket;
   kind: PeerKind;
@@ -16,6 +18,8 @@ type Peer = {
   resumeToken: string;
   connectionId: string | null;
   multiplex: boolean;
+  webhookRoutes: Set<string>;
+  webhookFormats: Set<WebhookSignatureFormat>;
   messageWindow: { startedAt: number; count: number };
 };
 type Connection = { id: string; host: Peer; client: Peer };
@@ -34,6 +38,8 @@ type Hello = {
   token: string;
   multiplex?: boolean;
   waitForHost?: boolean;
+  webhookRoute?: string;
+  webhookFormats?: string[];
 };
 type Relay = {
   type: "offer" | "answer" | "ice-candidate" | "ice-restart" | "disconnect";
@@ -45,6 +51,21 @@ type Relay = {
   sdpMid?: string | null;
   sdpMLineIndex?: number | null;
 };
+type WebhookResult = {
+  type: "webhook-delivery-result";
+  version: SignalProtocolVersion;
+  requestId: string;
+  status: number;
+};
+type WebhookDelivery = {
+  requestId: string;
+  routeId: string;
+  timestamp: string;
+  deliveryId: string;
+  signature: string;
+  bodyBase64: string;
+  format?: WebhookSignatureFormat;
+};
 
 export class SignalRoom {
   readonly #state: DurableObjectState;
@@ -52,7 +73,9 @@ export class SignalRoom {
   readonly #auth: SignalAuthenticator;
   readonly #peers = new Map<WebSocket, Peer>();
   readonly #hosts = new Map<string, Set<Peer>>();
+  readonly #webhookRoutes = new Map<string, Peer>();
   readonly #connections = new Map<string, Connection>();
+  readonly #pendingWebhooks = new Map<string, { peer: Peer; resolve: (status: number) => void }>();
   readonly #helloTimers = new Map<WebSocket, ReturnType<typeof setTimeout>>();
   readonly #iceServers = new Map<string, { expiresAt: number; value: IceServer[] }>();
 
@@ -63,7 +86,8 @@ export class SignalRoom {
   }
 
   async fetch(request: Request): Promise<Response> {
-    if (new URL(request.url).pathname === "/internal/auth-events" && request.method === "POST") {
+    const path = new URL(request.url).pathname;
+    if (path === "/internal/auth-events" && request.method === "POST") {
       const value = await request.json();
       if (!isAuthEvent(value))
         return Response.json(
@@ -73,6 +97,15 @@ export class SignalRoom {
       return (await this.authEvent(value))
         ? new Response(null, { status: 204 })
         : Response.json({ error: { code: "unsupported_event", message: "Unsupported auth event." } }, { status: 501 });
+    }
+    if (path === "/internal/webhook-delivery" && request.method === "POST") {
+      const value = await request.json();
+      if (!isWebhookDelivery(value))
+        return Response.json(
+          { error: { code: "invalid_delivery", message: "Invalid webhook delivery." } },
+          { status: 400 },
+        );
+      return new Response(null, { status: await this.#deliverWebhook(value) });
     }
     if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket")
       return new Response("WebSocket upgrade required.", { status: 426 });
@@ -105,6 +138,26 @@ export class SignalRoom {
       return true;
     }
     return false;
+  }
+
+  async #deliverWebhook(delivery: WebhookDelivery): Promise<number> {
+    const peer = this.#webhookRoutes.get(delivery.routeId);
+    if (!peer || peer.socket.readyState !== WebSocket.OPEN) return 503;
+    const response = new Promise<number>((resolve) => {
+      this.#pendingWebhooks.set(delivery.requestId, { peer, resolve });
+      const { format: requestedFormat, ...deliveryFrame } = delivery;
+      const format = requestedFormat && peer.webhookFormats.has(requestedFormat) ? requestedFormat : undefined;
+      this.#send(peer.socket, {
+        type: "webhook-delivery",
+        version: SIGNAL_PROTOCOL_VERSION,
+        ...deliveryFrame,
+        ...(format ? { format } : {}),
+      });
+    });
+    const timeout = new Promise<number>((resolve) => setTimeout(() => resolve(503), 10_000));
+    const status = await Promise.race([response, timeout]);
+    this.#pendingWebhooks.delete(delivery.requestId);
+    return status;
   }
 
   async alarm(): Promise<void> {
@@ -143,6 +196,11 @@ export class SignalRoom {
       return this.#authenticate(socket, message);
     }
     if (isTurnRefresh(message)) return this.#refresh(peer, message.connectionId);
+    if (isWebhookResult(message)) {
+      const pending = this.#pendingWebhooks.get(message.requestId);
+      if (pending?.peer === peer) pending.resolve(message.status);
+      return;
+    }
     if (isRelay(message)) return this.#relay(peer, message);
     return this.#fail(socket, "invalid_message", "Unsupported message.", 1008);
   }
@@ -159,7 +217,7 @@ export class SignalRoom {
       return this.#fail(socket, "authentication_required", "Authentication failed.", 1008);
     }
     const { claims, resumed } = authenticated;
-    if ((hello.peer === "host") !== (claims.role === "host"))
+    if ((hello.peer === "host" || hello.peer === "ingress") !== (claims.role === "host"))
       return this.#fail(socket, "permission_denied", "Peer role is not allowed.", 1008);
     const resumeToken = await this.#auth.issueResumeToken(claims);
     const peer: Peer = {
@@ -169,11 +227,16 @@ export class SignalRoom {
       resumeToken,
       connectionId: null,
       multiplex: hello.peer === "host" && hello.multiplex === true,
+      webhookRoutes: new Set(),
+      webhookFormats: new Set(
+        hello.webhookFormats?.filter((format): format is WebhookSignatureFormat => format === "standard-webhooks"),
+      ),
       messageWindow: { startedAt: Date.now(), count: 0 },
     };
     this.#peers.set(socket, peer);
     try {
       if (hello.peer === "host") return await this.#admitHost(peer, resumed);
+      if (hello.peer === "ingress") return await this.#admitIngress(peer, hello);
       return await this.#admitClient(peer, hello, resumed);
     } catch {
       this.#fail(socket, "protocol_error", "Signal setup failed.", 1013);
@@ -209,6 +272,21 @@ export class SignalRoom {
     if (!host.multiplex && this.#activeForHost(peer.claims.hostId).length > 0)
       return this.#fail(peer.socket, "host_busy", "The host already has an active remote session.", 1013);
     this.#connect(host, peer, resumed);
+  }
+
+  async #admitIngress(peer: Peer, hello: Hello): Promise<void> {
+    if (!hello.webhookRoute) return this.#fail(peer.socket, "permission_denied", "A webhook route is required.", 1008);
+    const routePayload = await this.#auth.verifyRoute(hello.webhookRoute, WEBHOOK_ROUTE_AUDIENCE);
+    if (routePayload.hid !== peer.claims.hostId || !Array.isArray(routePayload.routes))
+      return this.#fail(peer.socket, "permission_denied", "The webhook route belongs to another host.", 1008);
+    for (const route of routePayload.routes) {
+      if (!isRecord(route) || typeof route.id !== "string" || !WEBHOOK_ROUTE_ID_PATTERN.test(route.id))
+        return this.#fail(peer.socket, "authentication_required", "The webhook route is invalid.", 1008);
+      peer.webhookRoutes.add(route.id);
+      this.#webhookRoutes.set(route.id, peer);
+    }
+    this.#send(peer.socket, await this.#ready(peer, null));
+    this.#send(peer.socket, { type: "webhook-ready", version: SIGNAL_PROTOCOL_VERSION });
   }
 
   #connect(host: Peer, client: Peer, resumed: boolean): void {
@@ -298,6 +376,15 @@ export class SignalRoom {
       hosts?.delete(peer);
       if (hosts?.size === 0) this.#hosts.delete(peer.claims.hostId);
     }
+    for (const routeId of peer.webhookRoutes) {
+      if (this.#webhookRoutes.get(routeId) === peer) this.#webhookRoutes.delete(routeId);
+    }
+    for (const [requestId, pending] of this.#pendingWebhooks) {
+      if (pending.peer === peer) {
+        pending.resolve(503);
+        this.#pendingWebhooks.delete(requestId);
+      }
+    }
     for (const connection of [...this.#connections.values()]) {
       if (connection.host !== peer && connection.client !== peer) continue;
       if (connection) {
@@ -356,7 +443,12 @@ export class SignalRoom {
 function isHello(value: unknown): value is Hello {
   if (!isRecord(value) || value.type !== "hello" || value.version !== SIGNAL_PROTOCOL_VERSION) return false;
   return (
-    (value.peer === "host" || value.peer === "client") && typeof value.token === "string" && value.token.length > 0
+    (value.peer === "host" || value.peer === "client" || value.peer === "ingress") &&
+    typeof value.token === "string" &&
+    value.token.length > 0 &&
+    (value.webhookRoute === undefined || typeof value.webhookRoute === "string") &&
+    (value.webhookFormats === undefined ||
+      (Array.isArray(value.webhookFormats) && value.webhookFormats.every((format) => typeof format === "string")))
   );
 }
 
@@ -381,6 +473,16 @@ function isRelay(value: unknown): value is Relay {
   );
 }
 
+function isWebhookResult(value: unknown): value is WebhookResult {
+  return (
+    isRecord(value) &&
+    value.type === "webhook-delivery-result" &&
+    value.version === SIGNAL_PROTOCOL_VERSION &&
+    typeof value.requestId === "string" &&
+    typeof value.status === "number"
+  );
+}
+
 function isRecord(value: unknown): value is { [key: string]: unknown } {
   return typeof value === "object" && value !== null;
 }
@@ -392,6 +494,20 @@ function isIceServersPayload(value: unknown): value is { iceServers: IceServer[]
     const urls = server.urls;
     return typeof urls === "string" || (Array.isArray(urls) && urls.every((url) => typeof url === "string"));
   });
+}
+
+function isWebhookDelivery(value: unknown): value is WebhookDelivery {
+  return (
+    isRecord(value) &&
+    typeof value.requestId === "string" &&
+    typeof value.routeId === "string" &&
+    WEBHOOK_ROUTE_ID_PATTERN.test(value.routeId) &&
+    typeof value.timestamp === "string" &&
+    typeof value.deliveryId === "string" &&
+    typeof value.signature === "string" &&
+    typeof value.bodyBase64 === "string" &&
+    (value.format === undefined || value.format === "standard-webhooks")
+  );
 }
 
 function isAuthEvent(value: unknown): value is RemoteAuthEvent {

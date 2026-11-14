@@ -63,6 +63,15 @@ export class SignalAuthenticator {
       .sign(this.#secret);
   }
 
+  async verifyRoute(token: string, audience: string): Promise<JWTPayload> {
+    try {
+      const { payload } = await jwtVerify(token, this.#jwks, { audience, algorithms: ["ES256"] });
+      return payload;
+    } catch {
+      throw new SignalAuthError("invalid route ticket");
+    }
+  }
+
   async #verifyTicket(token: string): Promise<RemoteTicketClaims> {
     try {
       const { payload } = await jwtVerify(token, this.#jwks, {
