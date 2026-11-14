@@ -28,7 +28,6 @@
   "routes": [],
   "secrets": {
     "required": [
-      "EMAIL_SMTP_PASSWORD",
       "SKILLS_ADMIN_TOKEN",
       "SITE_REPORT_HASH_SECRET",
       "REMOTE_TICKET_PRIVATE_JWK",
@@ -37,7 +36,7 @@
     ]
   },
   "vars": {
-    "AUTH_EXPOSE_DEVELOPMENT_CODE": "false",
+    "AUTH_EXPOSE_DEVELOPMENT_CODE": "true",
     "EMAIL_SMTP_HOST": "mail.privateemail.com",
     "EMAIL_SMTP_PORT": "465",
     "EMAIL_SMTP_USERNAME": "hello@openbot.run",
