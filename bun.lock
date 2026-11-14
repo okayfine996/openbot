@@ -235,6 +235,19 @@
         "wrangler": "catalog:",
       },
     },
+    "apps/signal-worker": {
+      "name": "@openbot/signal-worker",
+      "version": "0.0.0",
+      "dependencies": {
+        "@openbot/contracts": "workspace:*",
+        "jose": "catalog:",
+      },
+      "devDependencies": {
+        "@cloudflare/workers-types": "catalog:",
+        "typescript": "catalog:",
+        "wrangler": "catalog:",
+      },
+    },
     "apps/site-router": {
       "name": "@openbot/site-router",
       "version": "0.0.0",
@@ -1178,6 +1191,8 @@
     "@openbot/mobile-updates": ["@openbot/mobile-updates@workspace:apps/mobile-updates"],
 
     "@openbot/remote-api": ["@openbot/remote-api@workspace:remote/api"],
+
+    "@openbot/signal-worker": ["@openbot/signal-worker@workspace:apps/signal-worker"],
 
     "@openbot/site-router": ["@openbot/site-router@workspace:apps/site-router"],
 

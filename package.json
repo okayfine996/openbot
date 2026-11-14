@@ -104,6 +104,8 @@
     "sites:deploy": "bun run --cwd apps/site-router deploy",
     "sites:bucket:create": "bunx wrangler r2 bucket create openbot-sites --storage-class Standard",
     "updates:deploy": "bun run --cwd apps/mobile-updates deploy",
+    "signal:dev": "bun run --cwd apps/signal-worker dev",
+    "signal:deploy": "bun run --cwd apps/signal-worker deploy",
     "updates:bucket:create": "bunx wrangler r2 bucket create openbot-mobile-updates --storage-class Standard",
     "sites:lifecycle": "bunx wrangler r2 bucket lifecycle set openbot-sites --file apps/site-router/r2-lifecycle.json --force",
     "api:migrate:local": "bun run --cwd apps/auth-api db:migrate:local",
