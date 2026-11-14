@@ -19,9 +19,10 @@ are implemented and tested.
 
 1. Durable Object team signaling and TURN credentials.
 2. Persistent revocation and auth-event handling.
-3. Webhook delivery and sealed queue routing.
-4. Telegram and Discord adapters.
-5. Auth API URL cutover and removal of machine-specific Signal homes.
+3. Generic webhook delivery through the Worker.
+4. Slack, GitHub and sealed queue routing.
+5. Telegram and Discord adapters.
+6. Auth API URL cutover and removal of machine-specific Signal homes.
 
 Each phase must pass the existing client protocol and security checks before the next phase is
 enabled. No phase deploys Cloudflare resources automatically.

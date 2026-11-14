@@ -3,9 +3,12 @@
 This Worker is the Cloudflare Durable Objects implementation of the Team WebRTC Signal path.
 
 It keeps the released Signal frame contract. A single `SignalRoom` object currently owns host and
-client sockets, SDP/ICE relay, resume tokens, ticket replay records and Cloudflare Realtime TURN
-credential refresh. Team data still stays on the WebRTC `rpc`, `events`, `files` and `desktop`
-channels.
+client sockets, ingress webhook sockets, SDP/ICE relay, resume tokens, ticket replay records and
+Cloudflare Realtime TURN credential refresh. Team data still stays on the WebRTC `rpc`, `events`,
+`files` and `desktop` channels.
+
+`POST /v1/webhooks/:routeId` forwards the exact body and signed headers to the host. The host remains
+the trust boundary for webhook HMAC verification. The Worker stores neither the body nor the headers.
 
 The existing Bun Signal service remains the migration path for Slack, Telegram, Discord, GitHub and
 generic webhook ingress until those routes are moved into the Worker. Do not point production
