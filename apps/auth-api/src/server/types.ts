@@ -52,6 +52,8 @@ export interface WorkerBindings {
   REMOTE_TICKET_KEY_ID?: string;
   /** The entry Signal: released hosts, ingress, bots, and hosts with no home. */
   REMOTE_SIGNAL_URL?: string;
+  /** Optional Cloudflare Signal Worker for Team WebRTC sockets. Ingress stays on REMOTE_SIGNAL_URL during migration. */
+  REMOTE_SIGNAL_WORKER_URL?: string;
   /**
    * The Signal machines that a host can have as its home, as `id=url,id=url`. Empty = no homes, and
    * each ticket names `REMOTE_SIGNAL_URL`.

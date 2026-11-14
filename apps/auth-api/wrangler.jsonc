@@ -59,6 +59,8 @@
     "EMAIL_LICENSE_FROM": "licenses@openbot.run",
     "REMOTE_TICKET_KEY_ID": "openbot-remote-1",
     "REMOTE_SIGNAL_URL": "wss://signal.openbot.run/v1/signal",
+    // Optional Cloudflare Durable Objects Signal for Team WebRTC. Platform ingress stays on the Bun Signal URL until migrated.
+    "REMOTE_SIGNAL_WORKER_URL": "",
     // Active Signal machines (docs/remote-session-deployment.md): a is sui-alexandria and b is signal2,
     // both in Helsinki; us is in San Jose (Leaseweb SFO-12) and au in Sydney (Leaseweb SYD-12). Keep a
     // and b first: the entry failover tries the homes in this order. Set the three lists together, so
@@ -187,6 +189,7 @@
         "SITE_COOKIE_ISOLATION_READY": "false",
         "REMOTE_TICKET_KEY_ID": "openbot-remote-1",
         "REMOTE_SIGNAL_URL": "ws://127.0.0.1:8081/v1/signal",
+        "REMOTE_SIGNAL_WORKER_URL": "",
         "REMOTE_SIGNAL_HOMES": "",
         "REMOTE_AUTH_WEBHOOK_URL": "http://127.0.0.1:8081/internal/auth-events",
         "REMOTE_AUTH_WEBHOOK_URLS": "",

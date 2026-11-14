@@ -294,6 +294,8 @@ export type RemoteAuthEventBindings = Pick<
 export interface RemoteSignalPlan {
   /** The entry Signal: released hosts, ingress, the webhook relay, bots, and hosts with no home. */
   entryUrl: string;
+  /** Optional Team WebRTC Signal Worker. Platform ingress still uses `entryUrl` during migration. */
+  teamUrl: string | null;
   /** The Signal machines that a host can have as its home, by ID. Empty = no host has a home. */
   homes: ReadonlyMap<string, string>;
   /** The place of each home, by ID. Empty = the hash alone chooses a home, wherever the host is. */
@@ -555,6 +557,7 @@ export class RemoteControlPlane {
       | "REMOTE_TICKET_PUBLIC_JWKS"
       | "REMOTE_TICKET_KEY_ID"
       | "REMOTE_SIGNAL_URL"
+      | "REMOTE_SIGNAL_WORKER_URL"
       | "REMOTE_SIGNAL_HOMES"
       | "REMOTE_SIGNAL_HOME_LOCATIONS"
       | "REMOTE_AUTH_WEBHOOK_URL"
@@ -2047,7 +2050,7 @@ export class RemoteControlPlane {
         ...(home ? { signal: home.id } : {}),
         now,
       });
-      return { ...issued, signalUrl: home?.url ?? signal.entryUrl };
+      return { ...issued, signalUrl: signal.teamUrl ?? home?.url ?? signal.entryUrl };
     },
     (operation) => operation.pipe(Effect.provide(this.#layer)),
   ).bind(this);
@@ -2234,7 +2237,10 @@ export class RemoteControlPlane {
         ...(home ? { signal: home.id } : {}),
         now: dependencies.now(),
       });
-      return { ...issued, signalUrl: home?.url ?? signal.entryUrl };
+      return {
+        ...issued,
+        signalUrl: placement.signalHome === true ? (signal.teamUrl ?? home?.url ?? signal.entryUrl) : signal.entryUrl,
+      };
     },
     (operation) => operation.pipe(Effect.provide(this.#layer)),
   ).bind(this);
@@ -3455,7 +3461,10 @@ function remoteSignalNotConfigured(): RemoteControlPlaneError {
  * 503 and does not send a host to a wrong machine.
  */
 export function remoteSignalPlan(
-  bindings: Pick<WorkerBindings, "REMOTE_SIGNAL_URL" | "REMOTE_SIGNAL_HOMES" | "REMOTE_SIGNAL_HOME_LOCATIONS">,
+  bindings: Pick<
+    WorkerBindings,
+    "REMOTE_SIGNAL_URL" | "REMOTE_SIGNAL_WORKER_URL" | "REMOTE_SIGNAL_HOMES" | "REMOTE_SIGNAL_HOME_LOCATIONS"
+  >,
 ): RemoteSignalPlan | null {
   const entryUrl = bindings.REMOTE_SIGNAL_URL?.trim();
   if (!entryUrl) return null;
@@ -3476,9 +3485,17 @@ export function remoteSignalPlan(
     homes.set(id, url);
   }
   // An empty home list is the rollback, so it must work without a change to the locations.
-  if (homes.size === 0) return { entryUrl, homes, locations: new Map() };
+  const teamUrl = optionalSignalUrl(bindings.REMOTE_SIGNAL_WORKER_URL);
+  if (homes.size === 0) return { entryUrl, teamUrl, homes, locations: new Map() };
   const locations = signalHomeLocations(bindings.REMOTE_SIGNAL_HOME_LOCATIONS ?? "", homes);
-  return locations ? { entryUrl, homes, locations } : null;
+  return locations ? { entryUrl, teamUrl, homes, locations } : null;
+}
+
+function optionalSignalUrl(value: string | undefined): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  const protocol = urlProtocol(trimmed);
+  return protocol === "wss:" || protocol === "ws:" ? trimmed : null;
 }
 
 /**
