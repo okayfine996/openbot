@@ -86,6 +86,24 @@ function readAuthEvent(value: unknown): RemoteAuthEvent {
     typeof value.userId === "string"
   )
     return { type: value.type, userId: value.userId };
+  if (
+    value.type === "slack-route-revoked" &&
+    typeof value.appId === "string" &&
+    typeof value.teamId === "string" &&
+    typeof value.through === "number"
+  )
+    return { type: value.type, appId: value.appId, teamId: value.teamId, through: value.through };
+  if (
+    value.type === "telegram-route-revoked" &&
+    typeof value.botId === "string" &&
+    typeof value.chatId === "string" &&
+    typeof value.through === "number"
+  )
+    return { type: value.type, botId: value.botId, chatId: value.chatId, through: value.through };
+  if (value.type === "discord-route-revoked" && typeof value.guildId === "string" && typeof value.through === "number")
+    return { type: value.type, guildId: value.guildId, through: value.through };
+  if (value.type === "webhook-route-revoked" && typeof value.routeId === "string" && typeof value.through === "number")
+    return { type: value.type, routeId: value.routeId, through: value.through };
   throw new Error("invalid event");
 }
 

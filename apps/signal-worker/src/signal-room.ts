@@ -402,5 +402,13 @@ function isAuthEvent(value: unknown): value is RemoteAuthEvent {
     return typeof value.hostId === "string" && typeof value.sessionId === "string";
   if (value.type === "account-profile-changed" || value.type === "account-servers-changed")
     return typeof value.userId === "string";
+  if (value.type === "slack-route-revoked")
+    return typeof value.appId === "string" && typeof value.teamId === "string" && typeof value.through === "number";
+  if (value.type === "telegram-route-revoked")
+    return typeof value.botId === "string" && typeof value.chatId === "string" && typeof value.through === "number";
+  if (value.type === "discord-route-revoked")
+    return typeof value.guildId === "string" && typeof value.through === "number";
+  if (value.type === "webhook-route-revoked")
+    return typeof value.routeId === "string" && typeof value.through === "number";
   return false;
 }
