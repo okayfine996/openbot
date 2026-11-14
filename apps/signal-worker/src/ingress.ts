@@ -1,5 +1,5 @@
 type SlackRequest = { appId: string; teamId: string; kind: "events" | "interactivity"; challenge?: string };
-export type TelegramUpdate = { chatId: string };
+export type TelegramUpdate = { chatId: string; linkCode?: string };
 
 export function readSlackRequest(body: Uint8Array): SlackRequest | null {
   const text = new TextDecoder().decode(body);
@@ -93,7 +93,9 @@ export function readTelegramUpdate(body: Uint8Array): TelegramUpdate | null {
     ];
     for (const candidate of candidates) {
       if (!isRecord(candidate) || !isRecord(candidate.chat) || typeof candidate.chat.id !== "number") continue;
-      return { chatId: String(candidate.chat.id) };
+      const text = typeof candidate.text === "string" ? candidate.text : undefined;
+      const linkCode = text?.match(/^\/start(?:@[A-Za-z0-9_]{1,64})?\s+([A-Za-z0-9_-]{32,64})$/u)?.[1];
+      return { chatId: String(candidate.chat.id), ...(linkCode ? { linkCode } : {}) };
     }
     return null;
   } catch {

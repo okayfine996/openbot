@@ -13,7 +13,8 @@
   "routes": [{ "pattern": "signal-worker.openbot.run", "custom_domain": true }],
   "vars": {
     "REMOTE_TICKET_JWKS_URL": "https://api.openbot.run/.well-known/jwks.json",
-    "TURN_PROVIDER": "cloudflare-realtime"
+    "TURN_PROVIDER": "cloudflare-realtime",
+    "REMOTE_CONTROL_PLANE_URL": "https://api.openbot.run"
   },
   "secrets": {
     "required": [
@@ -23,6 +24,8 @@
       "GITHUB_WEBHOOK_SECRET",
       "TELEGRAM_BOT_TOKENS",
       "TELEGRAM_WEBHOOK_SECRET",
+      "DISCORD_BOT_TOKEN",
+      "DISCORD_APPLICATION_ID",
       "CLOUDFLARE_TURN_KEY_ID",
       "CLOUDFLARE_TURN_API_TOKEN"
     ]
@@ -39,7 +42,8 @@
       "migrations": [{ "tag": "v1-preview", "new_sqlite_classes": ["SignalRoom"] }],
       "vars": {
         "REMOTE_TICKET_JWKS_URL": "http://127.0.0.1:3100/.well-known/jwks.json",
-        "TURN_PROVIDER": "disabled"
+        "TURN_PROVIDER": "disabled",
+        "REMOTE_CONTROL_PLANE_URL": "http://127.0.0.1:3100"
       },
       "secrets": { "required": [] }
     }

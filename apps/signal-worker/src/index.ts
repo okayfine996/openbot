@@ -1,4 +1,5 @@
 import type { RemoteAuthEvent } from "@openbot/contracts/signal-protocol/auth-events";
+import { DISCORD_API_PATH } from "@openbot/contracts/signal-protocol/discord-route";
 import {
   GITHUB_DELIVERY_BODY_BYTES_LIMIT,
   GITHUB_DELIVERY_HEADER,
@@ -11,8 +12,11 @@ import {
 } from "@openbot/contracts/signal-protocol/github-route";
 import {
   TELEGRAM_BOT_ID_PATTERN,
+  TELEGRAM_FILE_BYTES_LIMIT,
+  TELEGRAM_FILES_PATH,
   TELEGRAM_UPDATE_BYTES_LIMIT,
   TELEGRAM_UPDATES_PATH,
+  TELEGRAM_UPLOADS_PATH,
 } from "@openbot/contracts/signal-protocol/telegram-route";
 import {
   STANDARD_WEBHOOK_HEADER_SETS,
@@ -202,7 +206,45 @@ export default {
         new Request("https://signal-room.internal/internal/telegram-delivery", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ botId, chatId: update.chatId, bodyBase64: encodeBase64(new Uint8Array(body)) }),
+          body: JSON.stringify({
+            botId,
+            chatId: update.chatId,
+            ...(update.linkCode ? { linkCode: update.linkCode } : {}),
+            bodyBase64: encodeBase64(new Uint8Array(body)),
+          }),
+        }),
+      );
+    }
+    if (
+      (request.method === "GET" && url.pathname.startsWith(`${TELEGRAM_FILES_PATH}/`)) ||
+      (request.method === "POST" && url.pathname.startsWith(`${TELEGRAM_UPLOADS_PATH}/`))
+    ) {
+      const body = request.method === "POST" ? await request.arrayBuffer() : undefined;
+      if (body && body.byteLength > TELEGRAM_FILE_BYTES_LIMIT) return new Response(null, { status: 413 });
+      const id = env.SIGNAL_ROOM.idFromName("global");
+      return env.SIGNAL_ROOM.get(id).fetch(
+        new Request(`https://signal-room.internal${url.pathname}`, {
+          method: request.method,
+          headers: request.headers,
+          ...(body ? { body } : {}),
+        }),
+      );
+    }
+    if (request.method === "POST" && url.pathname === DISCORD_API_PATH) {
+      const authorization = request.headers.get("authorization") ?? "";
+      if (!/^Bearer [A-Za-z0-9_-]{43}$/u.test(authorization))
+        return Response.json({ error: { code: "unauthorized" } }, { status: 401 });
+      const body = await request.arrayBuffer();
+      if (body.byteLength > 512 * 1024) return Response.json({ error: { code: "invalid_request" } }, { status: 413 });
+      const id = env.SIGNAL_ROOM.idFromName("global");
+      return env.SIGNAL_ROOM.get(id).fetch(
+        new Request("https://signal-room.internal/internal/discord-api", {
+          method: "POST",
+          headers: {
+            Authorization: authorization,
+            "Content-Type": request.headers.get("Content-Type") ?? "application/json",
+          },
+          body,
         }),
       );
     }

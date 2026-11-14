@@ -7,6 +7,9 @@ interface Env {
   GITHUB_WEBHOOK_SECRET?: string;
   TELEGRAM_BOT_TOKENS?: string;
   TELEGRAM_WEBHOOK_SECRET?: string;
+  REMOTE_CONTROL_PLANE_URL?: string;
+  DISCORD_BOT_TOKEN?: string;
+  DISCORD_APPLICATION_ID?: string;
   TURN_PROVIDER: "cloudflare-realtime" | "disabled";
   CLOUDFLARE_TURN_KEY_ID?: string;
   CLOUDFLARE_TURN_API_TOKEN?: string;

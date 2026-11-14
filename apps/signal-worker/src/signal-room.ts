@@ -1,4 +1,5 @@
 import type { RemoteAuthEvent } from "@openbot/contracts/signal-protocol/auth-events";
+import { DISCORD_ROUTE_AUDIENCE } from "@openbot/contracts/signal-protocol/discord-route";
 import { GITHUB_ROUTE_AUDIENCE } from "@openbot/contracts/signal-protocol/github-route";
 import type { IceServer, SignalChannel, SignalProtocolVersion } from "@openbot/contracts/signal-protocol/messages";
 import { SIGNAL_MESSAGE_BYTES_LIMIT, SIGNAL_PROTOCOL_VERSION } from "@openbot/contracts/signal-protocol/messages";
@@ -6,7 +7,11 @@ import { SLACK_ROUTE_AUDIENCE } from "@openbot/contracts/signal-protocol/slack-r
 import {
   TELEGRAM_BOT_ID_PATTERN,
   TELEGRAM_CHAT_ID_PATTERN,
+  TELEGRAM_FILE_BYTES_LIMIT,
+  TELEGRAM_FILE_TOKEN_TTL_SECONDS,
+  TELEGRAM_FILES_PATH,
   TELEGRAM_ROUTE_AUDIENCE,
+  TELEGRAM_UPLOADS_PATH,
   type TelegramCallMethod,
 } from "@openbot/contracts/signal-protocol/telegram-route";
 import type { RemoteTicketClaims } from "@openbot/contracts/signal-protocol/ticket";
@@ -29,7 +34,8 @@ type Peer = {
   webhookRoutes: Map<string, number>;
   slackRoutes: Map<string, number>;
   githubRepositories: Set<string>;
-  telegramRoutes: Set<string>;
+  telegramRoutes: Map<string, number>;
+  discordGuilds: Map<string, number>;
   webhookFormats: Set<WebhookSignatureFormat>;
   messageWindow: { startedAt: number; count: number };
 };
@@ -53,6 +59,7 @@ type Hello = {
   slackRoute?: string;
   githubRoute?: string;
   telegramRoute?: string;
+  discordRoute?: string;
   webhookFormats?: string[];
 };
 type Relay = {
@@ -96,7 +103,7 @@ type GitHubDelivery = {
   repositoryKey: string;
   bodyBase64: string;
 };
-type TelegramDelivery = { botId: string; chatId: string; bodyBase64: string; linked?: true };
+type TelegramDelivery = { botId: string; chatId: string; bodyBase64: string; linkCode?: string; linked?: true };
 type TelegramCall = {
   type: "telegram-call";
   version: 1;
@@ -105,6 +112,10 @@ type TelegramCall = {
   method: TelegramCallMethod;
   params: object;
 };
+type TelegramGrantInput =
+  | { botId: string; filePath: string }
+  | { botId: string; chatId: number; fileName: string; messageThreadId?: number; replyParameters?: object };
+type TelegramGrant = TelegramGrantInput & { exp: number; nonce?: string };
 const TELEGRAM_METHODS = new Set<TelegramCallMethod>([
   "getMe",
   "sendMessage",
@@ -124,7 +135,8 @@ export class SignalRoom {
   readonly #webhookRoutes = new Map<string, { peer: Peer; linkedAt: number }>();
   readonly #slackRoutes = new Map<string, { peer: Peer; linkedAt: number }>();
   readonly #githubRepositories = new Map<string, Set<Peer>>();
-  readonly #telegramRoutes = new Map<string, Peer>();
+  readonly #telegramRoutes = new Map<string, { peer: Peer; linkedAt: number }>();
+  readonly #discordSessions = new Map<string, Peer>();
   readonly #connections = new Map<string, Connection>();
   readonly #pendingWebhooks = new Map<string, { peer: Peer; resolve: (status: number) => void }>();
   readonly #pendingDeliveries = new Map<string, { peer: Peer; resolve: (status: number) => void }>();
@@ -172,8 +184,13 @@ export class SignalRoom {
     if (path === "/internal/telegram-delivery" && request.method === "POST") {
       const value = await request.json();
       if (!isTelegramDelivery(value)) return Response.json({ error: { code: "invalid_delivery" } }, { status: 400 });
-      return new Response(null, { status: this.#deliverTelegram(value) });
+      return new Response(null, { status: await this.#deliverTelegram(value) });
     }
+    if (request.method === "GET" && path.startsWith(`${TELEGRAM_FILES_PATH}/`))
+      return this.#downloadTelegramFile(path.slice(`${TELEGRAM_FILES_PATH}/`.length));
+    if (request.method === "POST" && path.startsWith(`${TELEGRAM_UPLOADS_PATH}/`))
+      return this.#uploadTelegramFile(path.slice(`${TELEGRAM_UPLOADS_PATH}/`.length), request);
+    if (path === "/internal/discord-api" && request.method === "POST") return this.#discordApi(request);
     if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket")
       return new Response("WebSocket upgrade required.", { status: 426 });
     const pair = new WebSocketPair();
@@ -224,10 +241,21 @@ export class SignalRoom {
     }
     if (event.type === "telegram-route-revoked") {
       const key = `${event.botId}:${event.chatId}`;
-      const peer = this.#telegramRoutes.get(key);
-      if (peer) {
-        peer.telegramRoutes.delete(key);
+      const route = this.#telegramRoutes.get(key);
+      if (route && route.linkedAt <= event.through) {
+        route.peer.telegramRoutes.delete(key);
         this.#telegramRoutes.delete(key);
+      }
+      return true;
+    }
+    if (event.type === "discord-route-revoked") {
+      for (const [token, peer] of this.#discordSessions) {
+        const linkedAt = peer.discordGuilds.get(event.guildId);
+        if (linkedAt !== undefined && linkedAt <= event.through) {
+          peer.discordGuilds.delete(event.guildId);
+          const guilds = [...peer.discordGuilds.keys()];
+          this.#send(peer.socket, { type: "discord-session", version: SIGNAL_PROTOCOL_VERSION, token, guilds });
+        }
       }
       return true;
     }
@@ -289,8 +317,20 @@ export class SignalRoom {
     return statuses.every((status) => status === 404) ? 204 : 503;
   }
 
-  #deliverTelegram(delivery: TelegramDelivery): number {
-    const peer = this.#telegramRoutes.get(`${delivery.botId}:${delivery.chatId}`);
+  async #deliverTelegram(delivery: TelegramDelivery): Promise<number> {
+    let peer = this.#telegramRoutes.get(`${delivery.botId}:${delivery.chatId}`)?.peer;
+    let linked = false;
+    if (!peer && delivery.linkCode) {
+      const hostId = await this.#linkTelegramChat(delivery.botId, delivery.chatId, delivery.linkCode);
+      peer = hostId ? this.#peersForHost(hostId).find((candidate) => candidate.kind === "ingress") : undefined;
+      if (peer) {
+        const key = `${delivery.botId}:${delivery.chatId}`;
+        const linkedAt = Date.now();
+        peer.telegramRoutes.set(key, linkedAt);
+        this.#telegramRoutes.set(key, { peer, linkedAt });
+        linked = true;
+      }
+    }
     if (!peer || peer.socket.readyState !== WebSocket.OPEN) return 200;
     this.#send(peer.socket, {
       type: "telegram-delivery",
@@ -298,14 +338,79 @@ export class SignalRoom {
       botId: delivery.botId,
       chatId: delivery.chatId,
       bodyBase64: delivery.bodyBase64,
-      ...(delivery.linked ? { linked: true } : {}),
+      ...(delivery.linked || linked ? { linked: true } : {}),
     });
     return 204;
   }
 
+  async #linkTelegramChat(botId: string, chatId: string, code: string): Promise<string | null> {
+    const origin = this.#env.REMOTE_CONTROL_PLANE_URL?.trim();
+    if (!origin || !this.#env.REMOTE_AUTH_WEBHOOK_SECRET) return null;
+    const body = JSON.stringify({ botId, chatId, code });
+    const timestamp = Math.floor(Date.now() / 1_000).toString();
+    const key = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(this.#env.REMOTE_AUTH_WEBHOOK_SECRET),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"],
+    );
+    const signature = encodeBase64Url(
+      new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${timestamp}.${body}`))),
+    );
+    try {
+      const response = await fetch(new URL("/v2/remote/telegram-route/link", origin), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "OpenBot-Timestamp": timestamp, "OpenBot-Signature": signature },
+        body,
+      });
+      if (!response.ok) return null;
+      const value = await response.json();
+      return isRecord(value) && typeof value.hostId === "string" ? value.hostId : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async #discordApi(request: Request): Promise<Response> {
+    const authorization = request.headers.get("Authorization") ?? "";
+    const token = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
+    const peer = this.#discordSessions.get(token);
+    if (!peer || peer.socket.readyState !== WebSocket.OPEN)
+      return Response.json({ error: { code: "unauthorized" } }, { status: 401 });
+    const input = await request.json().catch(() => null);
+    if (!isRecord(input) || typeof input.op !== "string" || typeof input.guildId !== "string")
+      return Response.json({ error: { code: "invalid_request" } }, { status: 400 });
+    if (!peer.discordGuilds.has(input.guildId))
+      return Response.json({ error: { code: "unknown_guild" } }, { status: 404 });
+    const botToken = this.#env.DISCORD_BOT_TOKEN;
+    if (!botToken) return Response.json({ error: { code: "unavailable" } }, { status: 503 });
+    const mapped = discordRestRequest(input);
+    if (!mapped) return Response.json({ error: { code: "invalid_request" } }, { status: 400 });
+    try {
+      const response = await fetch(
+        `https://discord.com/api/v10${mapped.path}${mapped.query ? `?${mapped.query}` : ""}`,
+        {
+          method: mapped.method,
+          headers: { Authorization: `Bot ${botToken}`, ...(mapped.body ? { "Content-Type": "application/json" } : {}) },
+          ...(mapped.body ? { body: JSON.stringify(mapped.body) } : {}),
+        },
+      );
+      const value = await response.json().catch(() => null);
+      if (!response.ok)
+        return Response.json({ error: { code: discordErrorCode(response.status) } }, { status: response.status });
+      return Response.json(discordRestResult(input, value), { status: 200 });
+    } catch {
+      return Response.json({ error: { code: "unavailable" } }, { status: 503 });
+    }
+  }
+
   async #telegramCall(peer: Peer, call: TelegramCall): Promise<void> {
     const chatId = telegramCallChatId(call);
-    if (call.method !== "getMe" && (chatId === null || this.#telegramRoutes.get(`${call.botId}:${chatId}`) !== peer)) {
+    if (
+      call.method !== "getMe" &&
+      (chatId === null || this.#telegramRoutes.get(`${call.botId}:${chatId}`)?.peer !== peer)
+    ) {
       this.#send(peer.socket, {
         type: "telegram-call-result",
         version: SIGNAL_PROTOCOL_VERSION,
@@ -337,7 +442,7 @@ export class SignalRoom {
         body: JSON.stringify(call.params),
       });
       const value = await response.json();
-      const result = isRecord(value) && value.ok === true ? telegramCallResult(call.method, value.result) : null;
+      const result = isRecord(value) && value.ok === true ? await this.#telegramCallResult(call, value.result) : null;
       if (result === null) {
         this.#send(peer.socket, {
           type: "telegram-call-result",
@@ -378,6 +483,155 @@ export class SignalRoom {
       if (separator > 0 && TELEGRAM_BOT_ID_PATTERN.test(botId)) tokens.set(botId, value.slice(separator + 1));
     }
     return tokens;
+  }
+
+  async #telegramCallResult(call: TelegramCall, value: unknown): Promise<TelegramResult | null> {
+    if (call.method === "getFile" && isRecord(value) && typeof value.file_path === "string") {
+      if (typeof value.file_size === "number" && value.file_size > TELEGRAM_FILE_BYTES_LIMIT) return null;
+      return {
+        ...(typeof value.file_size === "number" ? { fileSize: value.file_size } : {}),
+        fileToken: await this.#issueTelegramGrant("openbot-telegram-file-token", {
+          botId: call.botId,
+          filePath: value.file_path,
+        }),
+      };
+    }
+    if (call.method === "sendDocument") {
+      if (
+        !isRecord(call.params) ||
+        typeof call.params.file_name !== "string" ||
+        typeof call.params.chat_id !== "number"
+      )
+        return null;
+      return {
+        uploadToken: await this.#issueTelegramGrant("openbot-telegram-upload-token", {
+          botId: call.botId,
+          chatId: call.params.chat_id,
+          fileName: call.params.file_name,
+          ...(typeof call.params.message_thread_id === "number"
+            ? { messageThreadId: call.params.message_thread_id }
+            : {}),
+          ...(isRecord(call.params.reply_parameters) ? { replyParameters: call.params.reply_parameters } : {}),
+        }),
+      };
+    }
+    return telegramCallResult(call.method, value);
+  }
+
+  async #issueTelegramGrant(label: string, claims: TelegramGrantInput): Promise<string> {
+    const payload = {
+      ...claims,
+      exp: Math.floor(Date.now() / 1_000) + TELEGRAM_FILE_TOKEN_TTL_SECONDS,
+      ...(label.endsWith("upload-token") ? { nonce: crypto.randomUUID() } : {}),
+    };
+    const encoded = encodeBase64Url(new TextEncoder().encode(JSON.stringify(payload)));
+    return `${encoded}.${await this.#grantSignature(label, encoded)}`;
+  }
+
+  async #verifyTelegramGrant(label: string, token: string): Promise<TelegramGrant | null> {
+    const [payload, signature, extra] = token.split(".");
+    if (
+      !payload ||
+      !signature ||
+      extra !== undefined ||
+      (await this.#grantSignature(label, payload)).localeCompare(signature) !== 0
+    )
+      return null;
+    let value: unknown;
+    try {
+      value = JSON.parse(new TextDecoder().decode(decodeBase64Url(payload)));
+    } catch {
+      return null;
+    }
+    if (
+      !isRecord(value) ||
+      typeof value.exp !== "number" ||
+      value.exp <= Math.floor(Date.now() / 1_000) ||
+      typeof value.botId !== "string"
+    )
+      return null;
+    if (label.endsWith("file-token") && typeof value.filePath === "string")
+      return { botId: value.botId, filePath: value.filePath, exp: value.exp };
+    if (
+      label.endsWith("upload-token") &&
+      typeof value.chatId === "number" &&
+      typeof value.fileName === "string" &&
+      typeof value.nonce === "string"
+    )
+      return {
+        botId: value.botId,
+        chatId: value.chatId,
+        fileName: value.fileName,
+        exp: value.exp,
+        nonce: value.nonce,
+        ...(typeof value.messageThreadId === "number" ? { messageThreadId: value.messageThreadId } : {}),
+        ...(isRecord(value.replyParameters) ? { replyParameters: value.replyParameters } : {}),
+      };
+    return null;
+  }
+
+  async #grantSignature(label: string, payload: string): Promise<string> {
+    const master = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(this.#env.REMOTE_SESSION_SECRET),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"],
+    );
+    const derived = await crypto.subtle.sign("HMAC", master, new TextEncoder().encode(label));
+    const key = await crypto.subtle.importKey("raw", derived, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+    return encodeBase64Url(new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload))));
+  }
+
+  async #downloadTelegramFile(token: string): Promise<Response> {
+    const grant = await this.#verifyTelegramGrant("openbot-telegram-file-token", token);
+    if (!grant || !("filePath" in grant) || typeof grant.botId !== "string" || typeof grant.filePath !== "string")
+      return new Response(null, { status: 404 });
+    const botToken = this.#telegramTokens().get(grant.botId);
+    if (!botToken || grant.filePath.includes("..") || grant.filePath.startsWith("/"))
+      return new Response(null, { status: 404 });
+    const response = await fetch(`https://api.telegram.org/file/bot${botToken}/${grant.filePath}`);
+    const length = Number(response.headers.get("content-length") ?? "0");
+    if (!response.ok || !response.body || (length > 0 && length > TELEGRAM_FILE_BYTES_LIMIT))
+      return new Response(null, { status: 502 });
+    return new Response(response.body, {
+      status: 200,
+      headers: { "Cache-Control": "no-store", "Content-Type": "application/octet-stream" },
+    });
+  }
+
+  async #uploadTelegramFile(token: string, request: Request): Promise<Response> {
+    const grant = await this.#verifyTelegramGrant("openbot-telegram-upload-token", token);
+    if (
+      !grant ||
+      !("chatId" in grant) ||
+      typeof grant.botId !== "string" ||
+      typeof grant.chatId !== "number" ||
+      typeof grant.fileName !== "string" ||
+      typeof grant.nonce !== "string"
+    )
+      return Response.json({ errorCode: 404, description: "upload_failed" }, { status: 404 });
+    const used = await this.#state.storage.get<number>(`telegram-upload:${grant.nonce}`);
+    if (used !== undefined) return Response.json({ errorCode: 404, description: "upload_failed" }, { status: 404 });
+    const body = await request.arrayBuffer();
+    if (body.byteLength === 0 || body.byteLength > TELEGRAM_FILE_BYTES_LIMIT)
+      return Response.json({ errorCode: 413, description: "file_too_large" }, { status: 413 });
+    const botToken = this.#telegramTokens().get(grant.botId);
+    if (!botToken) return Response.json({ errorCode: 503, description: "upload_failed" }, { status: 503 });
+    await this.#state.storage.put(`telegram-upload:${grant.nonce}`, grant.exp);
+    const form = new FormData();
+    form.set("chat_id", String(grant.chatId));
+    form.set("document", new Blob([body]), grant.fileName);
+    if (typeof grant.messageThreadId === "number") form.set("message_thread_id", String(grant.messageThreadId));
+    if (isRecord(grant.replyParameters)) form.set("reply_parameters", JSON.stringify(grant.replyParameters));
+    const response = await fetch(`https://api.telegram.org/bot${botToken}/sendDocument`, {
+      method: "POST",
+      body: form,
+    });
+    const value = await response.json();
+    if (isRecord(value) && value.ok === true && isRecord(value.result) && typeof value.result.message_id === "number")
+      return Response.json({ ok: true, messageId: value.result.message_id });
+    return Response.json({ errorCode: response.status, description: "upload_failed" }, { status: response.status });
   }
 
   async #waitForDelivery(peer: Peer, requestId: string, frame: unknown): Promise<number> {
@@ -466,7 +720,8 @@ export class SignalRoom {
       webhookRoutes: new Map(),
       slackRoutes: new Map(),
       githubRepositories: new Set(),
-      telegramRoutes: new Set(),
+      telegramRoutes: new Map(),
+      discordGuilds: new Map(),
       webhookFormats: new Set(
         hello.webhookFormats?.filter((format): format is WebhookSignatureFormat => format === "standard-webhooks"),
       ),
@@ -514,7 +769,7 @@ export class SignalRoom {
   }
 
   async #admitIngress(peer: Peer, hello: Hello): Promise<void> {
-    if (!hello.webhookRoute && !hello.slackRoute && !hello.githubRoute && !hello.telegramRoute)
+    if (!hello.webhookRoute && !hello.slackRoute && !hello.githubRoute && !hello.telegramRoute && !hello.discordRoute)
       return this.#fail(peer.socket, "permission_denied", "An ingress route is required.", 1008);
     if (hello.webhookRoute) {
       const routePayload = await this.#auth.verifyRoute(hello.webhookRoute, WEBHOOK_ROUTE_AUDIENCE);
@@ -578,8 +833,28 @@ export class SignalRoom {
         )
           return this.#fail(peer.socket, "authentication_required", "The Telegram route is invalid.", 1008);
         const key = `${chat.botId}:${chat.id}`;
-        peer.telegramRoutes.add(key);
-        this.#telegramRoutes.set(key, peer);
+        peer.telegramRoutes.set(key, chat.linkedAt);
+        this.#telegramRoutes.set(key, { peer, linkedAt: chat.linkedAt });
+      }
+    }
+    if (hello.discordRoute) {
+      const routePayload = await this.#auth.verifyRoute(hello.discordRoute, DISCORD_ROUTE_AUDIENCE);
+      if (routePayload.hid !== peer.claims.hostId || !Array.isArray(routePayload.guilds))
+        return this.#fail(peer.socket, "permission_denied", "The Discord route belongs to another host.", 1008);
+      for (const guild of routePayload.guilds) {
+        if (!isRecord(guild) || typeof guild.id !== "string" || typeof guild.linkedAt !== "number")
+          return this.#fail(peer.socket, "authentication_required", "The Discord route is invalid.", 1008);
+        peer.discordGuilds.set(guild.id, guild.linkedAt);
+      }
+      if (this.#env.DISCORD_BOT_TOKEN) {
+        const session = encodeBase64Url(crypto.getRandomValues(new Uint8Array(32)));
+        this.#discordSessions.set(session, peer);
+        this.#send(peer.socket, {
+          type: "discord-session",
+          version: SIGNAL_PROTOCOL_VERSION,
+          token: session,
+          guilds: [...peer.discordGuilds.keys()],
+        });
       }
     }
     this.#send(peer.socket, await this.#ready(peer, null));
@@ -686,8 +961,11 @@ export class SignalRoom {
       peers?.delete(peer);
       if (peers?.size === 0) this.#githubRepositories.delete(route);
     }
-    for (const route of peer.telegramRoutes) {
-      if (this.#telegramRoutes.get(route) === peer) this.#telegramRoutes.delete(route);
+    for (const route of peer.telegramRoutes.keys()) {
+      if (this.#telegramRoutes.get(route)?.peer === peer) this.#telegramRoutes.delete(route);
+    }
+    for (const [token, sessionPeer] of this.#discordSessions) {
+      if (sessionPeer === peer) this.#discordSessions.delete(token);
     }
     for (const [requestId, pending] of this.#pendingWebhooks) {
       if (pending.peer === peer) {
@@ -766,6 +1044,7 @@ function isHello(value: unknown): value is Hello {
     (value.slackRoute === undefined || typeof value.slackRoute === "string") &&
     (value.githubRoute === undefined || typeof value.githubRoute === "string") &&
     (value.telegramRoute === undefined || typeof value.telegramRoute === "string") &&
+    (value.discordRoute === undefined || typeof value.discordRoute === "string") &&
     (value.webhookFormats === undefined ||
       (Array.isArray(value.webhookFormats) && value.webhookFormats.every((format) => typeof format === "string")))
   );
@@ -832,6 +1111,8 @@ function isTelegramDelivery(value: unknown): value is TelegramDelivery {
     typeof value.chatId === "string" &&
     TELEGRAM_CHAT_ID_PATTERN.test(value.chatId) &&
     typeof value.bodyBase64 === "string" &&
+    (value.linkCode === undefined ||
+      (typeof value.linkCode === "string" && /^[A-Za-z0-9_-]{32,64}$/u.test(value.linkCode))) &&
     (value.linked === undefined || value.linked === true)
   );
 }
@@ -857,6 +1138,9 @@ interface TelegramResult {
   messageId?: number;
   botId?: string;
   username?: string;
+  fileToken?: string;
+  fileSize?: number;
+  uploadToken?: string;
 }
 
 function isTelegramCallMethod(value: unknown): value is TelegramCallMethod {
@@ -906,6 +1190,17 @@ function isRecord(value: unknown): value is { [key: string]: unknown } {
   return typeof value === "object" && value !== null;
 }
 
+function encodeBase64Url(bytes: Uint8Array): string {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
+}
+
+function decodeBase64Url(value: string): Uint8Array {
+  const normalized = value.replaceAll("-", "+").replaceAll("_", "/") + "=".repeat((4 - (value.length % 4)) % 4);
+  return Uint8Array.from(atob(normalized), (character) => character.charCodeAt(0));
+}
+
 function isIceServersPayload(value: unknown): value is { iceServers: IceServer[] } {
   if (!isRecord(value) || !Array.isArray(value.iceServers) || value.iceServers.length === 0) return false;
   return value.iceServers.every((server) => {
@@ -913,6 +1208,174 @@ function isIceServersPayload(value: unknown): value is { iceServers: IceServer[]
     const urls = server.urls;
     return typeof urls === "string" || (Array.isArray(urls) && urls.every((url) => typeof url === "string"));
   });
+}
+
+type DiscordMappedRequest = {
+  method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
+  path: string;
+  query?: string;
+  body?: unknown;
+};
+
+function discordRestRequest(input: { [key: string]: unknown }): DiscordMappedRequest | null {
+  const guildId = typeof input.guildId === "string" ? input.guildId : null;
+  if (!guildId) return null;
+  const channelId = typeof input.channelId === "string" ? input.channelId : null;
+  const messageId = typeof input.messageId === "string" ? input.messageId : null;
+  switch (input.op) {
+    case "createMessage":
+      if (!channelId || typeof input.content !== "string" || !Array.isArray(input.buttons)) return null;
+      return {
+        method: "POST",
+        path: `/channels/${channelId}/messages`,
+        body: {
+          ...(input.content ? { content: input.content } : {}),
+          allowed_mentions: { parse: ["users"], replied_user: false },
+          ...(typeof input.replyTo === "string"
+            ? { message_reference: { message_id: input.replyTo, fail_if_not_exists: false } }
+            : {}),
+          components: input.buttons.map(discordButton),
+          ...(Array.isArray(input.embeds) ? { embeds: input.embeds } : {}),
+        },
+      };
+    case "editMessage":
+      if (!channelId || !messageId || typeof input.content !== "string" || !Array.isArray(input.buttons)) return null;
+      return {
+        method: "PATCH",
+        path: `/channels/${channelId}/messages/${messageId}`,
+        body: {
+          content: input.content,
+          allowed_mentions: { parse: [], replied_user: false },
+          components: input.buttons.map(discordButton),
+        },
+      };
+    case "deleteMessage":
+      return channelId && messageId ? { method: "DELETE", path: `/channels/${channelId}/messages/${messageId}` } : null;
+    case "react":
+      return channelId && messageId && typeof input.emoji === "string" && typeof input.on === "boolean"
+        ? {
+            method: input.on ? "PUT" : "DELETE",
+            path: `/channels/${channelId}/messages/${messageId}/reactions/${encodeURIComponent(input.emoji)}/@me`,
+          }
+        : null;
+    case "listMessages":
+      return channelId && typeof input.after === "string" && typeof input.limit === "number"
+        ? {
+            method: "GET",
+            path: `/channels/${channelId}/messages`,
+            query: new URLSearchParams({ after: input.after, limit: String(input.limit) }).toString(),
+          }
+        : null;
+    case "member":
+      return typeof input.userId === "string"
+        ? { method: "GET", path: `/guilds/${guildId}/members/${input.userId}` }
+        : null;
+    case "channel":
+      return channelId ? { method: "GET", path: `/channels/${channelId}` } : null;
+    case "listChannels":
+      return { method: "GET", path: `/guilds/${guildId}/channels` };
+    case "listRoles":
+      return { method: "GET", path: `/guilds/${guildId}/roles` };
+    default:
+      return null;
+  }
+}
+
+function discordButton(value: unknown): { type: 2; custom_id: string; label: string; style: number } {
+  const button = isRecord(value) ? value : {};
+  const styles: { [key: string]: number } = { primary: 1, secondary: 2, success: 3, danger: 4 };
+  const style = typeof button.style === "string" ? (styles[button.style] ?? 2) : 2;
+  return { type: 2, custom_id: String(button.customId ?? ""), label: String(button.label ?? ""), style };
+}
+
+type DiscordRestResult =
+  | { messageId: string }
+  | { name: string }
+  | { messages: DiscordRestHistory[] }
+  | { channels: DiscordRestChannel[] }
+  | { roles: DiscordRestRole[] }
+  | Record<never, never>;
+type DiscordRestHistory = {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorIsBot: boolean;
+  content: string;
+  replyToId: string | null;
+  sentAt: string;
+  attachments: DiscordRestAttachment[];
+  embeds: string[];
+  forwarded: boolean;
+};
+type DiscordRestAttachment = { id: string; filename: string; contentType: string | null; size: number; url: string };
+type DiscordRestChannel = { id: string; name: string; kind: "channel" | "thread" };
+type DiscordRestRole = { id: string; name: string };
+
+function discordRestResult(input: { [key: string]: unknown }, value: unknown): DiscordRestResult {
+  if (input.op === "createMessage" && isRecord(value) && typeof value.id === "string") return { messageId: value.id };
+  if (input.op === "member" && isRecord(value) && isRecord(value.user))
+    return { name: String(value.nick ?? value.user.global_name ?? value.user.username ?? "") };
+  if (input.op === "channel" && isRecord(value)) return { name: typeof value.name === "string" ? value.name : "" };
+  if (input.op === "listMessages" && Array.isArray(value))
+    return {
+      messages: value.map((message) => {
+        const item = isRecord(message) ? message : {};
+        const author = isRecord(item.author) ? item.author : {};
+        return {
+          id: String(item.id ?? "0"),
+          authorId: String(author.id ?? "0"),
+          authorName: String(author.global_name ?? author.username ?? ""),
+          authorIsBot: author.bot === true,
+          content: String(item.content ?? ""),
+          replyToId:
+            isRecord(item.message_reference) && typeof item.message_reference.message_id === "string"
+              ? item.message_reference.message_id
+              : null,
+          sentAt: String(item.timestamp ?? ""),
+          attachments: Array.isArray(item.attachments) ? item.attachments.map(discordAttachment) : [],
+          embeds: Array.isArray(item.embeds) ? item.embeds.map((embed) => JSON.stringify(embed)) : [],
+          forwarded: false,
+        };
+      }),
+    };
+  if (input.op === "listChannels" && Array.isArray(value))
+    return {
+      channels: value.map((channel) => ({
+        id: String(isRecord(channel) ? channel.id : "0"),
+        name: String(isRecord(channel) ? (channel.name ?? "") : ""),
+        kind: isRecord(channel) && (channel.type === 12 || channel.type === 11) ? "thread" : "channel",
+      })),
+    };
+  if (input.op === "listRoles" && Array.isArray(value))
+    return {
+      roles: value
+        .filter(isRecord)
+        .filter((role) => role.id !== input.guildId && role.managed !== true)
+        .map((role) => ({ id: String(role.id), name: String(role.name ?? "") })),
+    };
+  return {};
+}
+
+function discordAttachment(value: unknown): DiscordRestAttachment {
+  const item = isRecord(value) ? value : {};
+  return {
+    id: String(item.id ?? "0"),
+    filename: String(item.filename ?? ""),
+    contentType: typeof item.content_type === "string" ? item.content_type : null,
+    size: typeof item.size === "number" ? item.size : 0,
+    url: String(item.url ?? ""),
+  };
+}
+
+function discordErrorCode(
+  status: number,
+): "unauthorized" | "forbidden" | "not_found" | "rate_limited" | "invalid_request" | "discord_failed" {
+  if (status === 401) return "unauthorized";
+  if (status === 403) return "forbidden";
+  if (status === 404) return "not_found";
+  if (status === 429) return "rate_limited";
+  if (status === 400) return "invalid_request";
+  return "discord_failed";
 }
 
 function isWebhookDelivery(value: unknown): value is WebhookDelivery {
