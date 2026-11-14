@@ -294,7 +294,7 @@ export type RemoteAuthEventBindings = Pick<
 export interface RemoteSignalPlan {
   /** The entry Signal: released hosts, ingress, the webhook relay, bots, and hosts with no home. */
   entryUrl: string;
-  /** Optional Team WebRTC Signal Worker. Empty keeps Team WebRTC on the Bun entry service. */
+  /** Optional Cloudflare Signal Worker for personal remote sessions. Empty keeps Bun signaling. */
   teamUrl: string | null;
   /** Optional ingress Signal Worker. Empty keeps connector ingress on the Bun entry service. */
   ingressUrl: string | null;

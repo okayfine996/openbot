@@ -12,7 +12,7 @@ flowchart LR
   S[Signal Worker]
   D[Durable Object: SignalRoom\nWebSocket signaling and short-lived state]
   T[Cloudflare Realtime TURN\noptional ICE relay]
-  B[Existing Bun Team API\nRPC / events / files / queues]
+  B[Existing OpenBot host API\noptional Team data channels]
   I[Ingress adapters\nSlack / Telegram / Discord / GitHub / webhooks]
   C -->|HTTPS auth and ticket| A
   C <-->|WebRTC data channels| B
@@ -25,10 +25,10 @@ flowchart LR
   S -->|host delivery frame| B
 ```
 
-The Team API wire protocol remains authoritative. Cloudflare carries authentication metadata,
+The personal remote session path is authoritative. Cloudflare carries authentication metadata,
 pairing/signaling, route delivery envelopes and short-lived coordination state; it does not store
-chats, files, commands, or event payloads. The client still uses existing WebRTC data channels for
-`rpc`, `events`, and `files`.
+chats, files, commands, or event payloads. Existing host data channels remain unchanged. Multi-user
+Team membership and Team API migration are optional and are not prerequisites for the personal path.
 
 The current implementation uses one named `SignalRoom` object. This is a small compatible
 migration topology, not the final high-scale topology. Any sharding change must preserve ticket
@@ -41,8 +41,8 @@ claims, resume semantics, route ownership, and protocol frames.
   Durable Object SQLite storage.
 - It relays host/client SDP and ICE frames, refreshes TURN credentials, enforces message and body
   limits, and handles auth/session invalidation events.
-- Team tickets can opt into the Worker through `REMOTE_SIGNAL_WORKER_URL`; blank keeps current
-  behavior unchanged.
+- Personal remote tickets can opt into the Worker through `REMOTE_SIGNAL_WORKER_URL`; blank keeps
+  current Bun behavior unchanged. Team membership is not required for this path.
 - Generic webhook ingress can be forwarded to a Worker-connected host. Signature verification and
   route authorization remain host-side.
 - Slack and GitHub signed ingress, Telegram update delivery, and a bounded subset of Telegram Bot API
@@ -59,7 +59,7 @@ claims, resume semantics, route ownership, and protocol frames.
 | Phase | Work | Depends on | Exit condition |
 | --- | --- | --- | --- |
 | 0. Baseline | Fork, branch, license review, protocol inventory, dry-run-only policy | None | Fork is the only write target; no deployment credentials are used |
-| 1. Team signaling | Worker, DO WebSocket pairing, ticket validation, resume, SDP/ICE relay | 0 | Existing desktop/mobile Team pairing and reconnect tests pass |
+| 1. Personal signaling | Worker, DO WebSocket pairing, ticket validation, resume, SDP/ICE relay | 0 | One owner can connect the desktop host and mobile client with reconnect |
 | 2. TURN | Realtime TURN provider, bounded TTL, redacted failures | 1 | Direct ICE and relay ICE both work; TURN token never reaches logs or repository |
 | 3. Revocation | Persistent replay, host/session revocation, signed auth events and alarms | 1 | Revoked tickets and sessions are rejected without restarting the Worker |
 | 4. Generic webhook | Route ticket, signed public ingress, host-side verification, delivery result | 3 | Valid delivery reaches the correct host; invalid, stale and revoked routes fail safely |
@@ -90,8 +90,8 @@ explicit operator action after phase exit conditions are met.
 - WebSocket messages and public webhook bodies are bounded to 64 KiB and rate-limited where applicable.
 - Discord Gateway events are normalized before host delivery; interaction acknowledgement happens before
   host work, and interaction tokens are never sent to hosts.
-- Mobile and desktop Team API behavior remains unchanged: `rpc`, `events`, `files`, and chat data
-  stay on existing data channels.
+- Mobile and desktop personal remote behavior remains unchanged; chat data and commands stay on
+  existing host data channels. Team membership is optional.
 
 ### Operations and cost
 

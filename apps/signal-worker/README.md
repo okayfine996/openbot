@@ -1,6 +1,6 @@
 # OpenBot Signal Worker
 
-This Worker is the Cloudflare Durable Objects implementation of the Team WebRTC Signal path.
+This Worker is the Cloudflare Durable Objects implementation of the OpenBot personal remote Signal path.
 
 It keeps the released Signal frame contract. A single `SignalRoom` object currently owns host and
 client sockets, ingress webhook sockets, SDP/ICE relay, resume tokens, ticket replay records and

@@ -11,14 +11,15 @@ created or deployed by this work.
 - PolyForm Noncommercial 1.0.0 remains the repository license. Personal, noncommercial use is the
   intended safe boundary; commercial hosting or resale needs separate permission review.
 
-## Core path
+## Core personal path
 
-The core remote path does not require Discord:
+The target is a single-owner personal remote setup; it does not require Discord or multi-user Team:
 
 1. Auth Worker + D1 keep users, devices, host registration, memberships, invitations and sessions.
 2. Signal Worker + one Durable Object validate tickets, pair Team clients, relay SDP/ICE and issue
    bounded Cloudflare Realtime TURN credentials.
-3. Existing Team API remains on the host's WebRTC `rpc`, `events` and `files` data channels.
+3. Existing host data channels remain unchanged. Multi-user Team API behavior is optional and is not
+   part of the personal acceptance gate.
 4. Slack, Telegram, GitHub and generic webhooks are optional connector ingress paths. Discord is an
    optional connector; its Gateway migration is isolated from Team access.
 
@@ -54,8 +55,8 @@ part of a code review or local verification.
 
 1. Deploy Auth Worker changes and confirm existing Auth/D1 tests and health checks.
 2. Deploy Signal Worker with production secrets and no connector URL changes.
-3. Set only `REMOTE_SIGNAL_WORKER_URL` for a Team canary; confirm direct ICE, TURN fallback,
-   reconnect, session revocation and Team `rpc/events/files` behavior.
+3. Set only `REMOTE_SIGNAL_WORKER_URL` for a personal canary; confirm direct ICE, TURN fallback,
+   reconnect, session revocation and normal desktop/mobile remote behavior.
 4. Enable `REMOTE_SIGNAL_INGRESS_WORKER_URL` for one connector canary, then verify route wake,
    host-side signature validation, queue flush/ACK, retries and revocation.
 5. Monitor DO duration/request quotas, TURN egress and connector error rates before expanding.
@@ -66,7 +67,7 @@ part of a code review or local verification.
 Stop the canary and clear the Worker URLs if any of these occur:
 
 - Ticket, session or route revocation is delayed or accepted incorrectly.
-- Team API frames, files or chat payloads leave the existing WebRTC data channels.
+- Chat, commands or files leave the existing host data channels.
 - A queued connector event is delivered without host decryption/ACK, is duplicated beyond the
   documented retry behavior, or is persisted as plaintext.
 - TURN or outbound Discord Gateway duration/egress approaches the alert threshold.

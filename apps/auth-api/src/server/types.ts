@@ -52,7 +52,7 @@ export interface WorkerBindings {
   REMOTE_TICKET_KEY_ID?: string;
   /** The entry Signal: released hosts, ingress, bots, and hosts with no home. */
   REMOTE_SIGNAL_URL?: string;
-  /** Optional Cloudflare Signal Worker for Team WebRTC sockets. */
+  /** Optional Cloudflare Signal Worker for personal remote-session sockets. */
   REMOTE_SIGNAL_WORKER_URL?: string;
   /** Optional Cloudflare Signal Worker for ingress sockets and public connector routes. */
   REMOTE_SIGNAL_INGRESS_WORKER_URL?: string;
