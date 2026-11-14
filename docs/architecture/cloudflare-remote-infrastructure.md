@@ -45,10 +45,13 @@ claims, resume semantics, route ownership, and protocol frames.
   behavior unchanged.
 - Generic webhook ingress can be forwarded to a Worker-connected host. Signature verification and
   route authorization remain host-side.
-- Slack and GitHub signed ingress, plus Telegram update delivery and a bounded subset of Telegram
-  Bot API calls, can use the Worker when `REMOTE_SIGNAL_INGRESS_WORKER_URL` is configured.
-- Slack, Telegram, Discord, GitHub and sealed queue routing remain on Bun until their adapters and
-  compatibility tests are complete.
+- Slack and GitHub signed ingress, Telegram update delivery, and a bounded subset of Telegram Bot API
+  calls can use the Worker when `REMOTE_SIGNAL_INGRESS_WORKER_URL` is configured.
+- Sealed queue delivery is implemented for Slack and Telegram with host-side decryption, ACKs, TTL and
+  per-host bounds. GitHub is intentionally not queueable.
+- Discord route tickets, session-scoped REST calls and revocation are present in the Worker, but the
+  Discord Gateway event adapter and multipart/interaction REST parity remain on Bun until compatibility
+  tests are complete.
 
 ## Ordered implementation plan
 
@@ -59,7 +62,7 @@ claims, resume semantics, route ownership, and protocol frames.
 | 2. TURN | Realtime TURN provider, bounded TTL, redacted failures | 1 | Direct ICE and relay ICE both work; TURN token never reaches logs or repository |
 | 3. Revocation | Persistent replay, host/session revocation, signed auth events and alarms | 1 | Revoked tickets and sessions are rejected without restarting the Worker |
 | 4. Generic webhook | Route ticket, signed public ingress, host-side verification, delivery result | 3 | Valid delivery reaches the correct host; invalid, stale and revoked routes fail safely |
-| 5. Bot adapters | Slack, GitHub, sealed queue, then Telegram and Discord | 4 | Each adapter preserves payload/signature/ack semantics and has focused tests |
+| 5. Bot adapters | Slack/GitHub ingress, Telegram, sealed queue, then Discord Gateway and REST parity | 4 | Each migrated adapter preserves payload/signature/ack semantics and has focused tests |
 | 6. Cutover | Configure URLs, canary, observe, rollback plan | 5 | Canary is stable, quotas are visible, and rollback to Bun is tested |
 | 7. Cleanup | Remove machine-specific Signal homes after a measured migration window | 6 | No client or ingress dependency remains on the retired path |
 
