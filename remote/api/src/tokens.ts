@@ -34,7 +34,6 @@ import {
   createRemoteJWKSet,
   customFetch,
   decodeJwt,
-  type FetchImplementation,
   type JSONWebKeySet,
   type JWTVerifyGetKey,
   jwtVerify,
@@ -129,6 +128,7 @@ const cloudflareIceServersResponseSchema = z.strictObject({
     .min(1),
 });
 const SLACK_SIGNATURE_TOLERANCE_SECONDS = 5 * 60;
+type TokenFetch = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
 export class RemoteTokenError extends Schema.TaggedError<RemoteTokenError>()("RemoteTokenError", {
   message: Schema.String,
@@ -158,7 +158,7 @@ export class RemoteTokenService {
   readonly #ticketKey: JWTVerifyGetKey;
   readonly #remoteTicketKey: RemoteJWKSet | null;
   readonly #sessionSecret: Uint8Array;
-  readonly #fetch: typeof fetch;
+  readonly #fetch: TokenFetch;
   // `SIGNAL_ID`: a ticket or resume token whose `signal` claim names another machine is refused.
   readonly #signalId: string | null;
   readonly #turnProvider: "coturn" | "cloudflare-realtime";
@@ -209,7 +209,7 @@ export class RemoteTokenService {
     validateResumeClaims: (claims: RemoteTicketClaims) => Effect.Effect<boolean, RemoteTokenUnavailableError> = () =>
       Effect.succeed(false),
     options: {
-      fetch?: FetchImplementation;
+      fetch?: TokenFetch;
       // Picks the TURN relay of a host. Without it, every host gets `TURN_HOST`.
       turnHost?: (hostId: string) => string;
       // Asks the account service which links of a route are current. Without it, none is.
@@ -243,7 +243,7 @@ export class RemoteTokenService {
       this.#ticketKey = remoteTicketKey;
     }
     this.#sessionSecret = new TextEncoder().encode(config.sessionSecret);
-    this.#fetch = fetch;
+    this.#fetch = options.fetch ?? fetch;
     this.#signalId = config.signalId;
     this.#turnProvider = config.turnProvider;
     this.#turnSecret = config.turnSecret;
