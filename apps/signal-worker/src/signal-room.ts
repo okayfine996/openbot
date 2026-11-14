@@ -1,6 +1,8 @@
 import type { RemoteAuthEvent } from "@openbot/contracts/signal-protocol/auth-events";
+import { GITHUB_ROUTE_AUDIENCE } from "@openbot/contracts/signal-protocol/github-route";
 import type { IceServer, SignalChannel, SignalProtocolVersion } from "@openbot/contracts/signal-protocol/messages";
 import { SIGNAL_MESSAGE_BYTES_LIMIT, SIGNAL_PROTOCOL_VERSION } from "@openbot/contracts/signal-protocol/messages";
+import { SLACK_ROUTE_AUDIENCE } from "@openbot/contracts/signal-protocol/slack-route";
 import type { RemoteTicketClaims } from "@openbot/contracts/signal-protocol/ticket";
 import type { WebhookSignatureFormat } from "@openbot/contracts/signal-protocol/webhook-route";
 import { WEBHOOK_ROUTE_AUDIENCE, WEBHOOK_ROUTE_ID_PATTERN } from "@openbot/contracts/signal-protocol/webhook-route";
@@ -19,6 +21,8 @@ type Peer = {
   connectionId: string | null;
   multiplex: boolean;
   webhookRoutes: Map<string, number>;
+  slackRoutes: Map<string, number>;
+  githubRepositories: Set<string>;
   webhookFormats: Set<WebhookSignatureFormat>;
   messageWindow: { startedAt: number; count: number };
 };
@@ -39,6 +43,8 @@ type Hello = {
   multiplex?: boolean;
   waitForHost?: boolean;
   webhookRoute?: string;
+  slackRoute?: string;
+  githubRoute?: string;
   webhookFormats?: string[];
 };
 type Relay = {
@@ -66,6 +72,22 @@ type WebhookDelivery = {
   bodyBase64: string;
   format?: WebhookSignatureFormat;
 };
+type SlackDelivery = {
+  requestId: string;
+  appId: string;
+  teamId: string;
+  kind: "events" | "interactivity";
+  retryNum: number | null;
+  retryReason: string | null;
+  bodyBase64: string;
+};
+type GitHubDelivery = {
+  requestId: string;
+  event: string;
+  deliveryId: string;
+  repositoryKey: string;
+  bodyBase64: string;
+};
 
 export class SignalRoom {
   readonly #state: DurableObjectState;
@@ -74,8 +96,11 @@ export class SignalRoom {
   readonly #peers = new Map<WebSocket, Peer>();
   readonly #hosts = new Map<string, Set<Peer>>();
   readonly #webhookRoutes = new Map<string, { peer: Peer; linkedAt: number }>();
+  readonly #slackRoutes = new Map<string, { peer: Peer; linkedAt: number }>();
+  readonly #githubRepositories = new Map<string, Set<Peer>>();
   readonly #connections = new Map<string, Connection>();
   readonly #pendingWebhooks = new Map<string, { peer: Peer; resolve: (status: number) => void }>();
+  readonly #pendingDeliveries = new Map<string, { peer: Peer; resolve: (status: number) => void }>();
   readonly #helloTimers = new Map<WebSocket, ReturnType<typeof setTimeout>>();
   readonly #iceServers = new Map<string, { expiresAt: number; value: IceServer[] }>();
 
@@ -106,6 +131,16 @@ export class SignalRoom {
           { status: 400 },
         );
       return new Response(null, { status: await this.#deliverWebhook(value) });
+    }
+    if (path === "/internal/slack-delivery" && request.method === "POST") {
+      const value = await request.json();
+      if (!isSlackDelivery(value)) return Response.json({ error: { code: "invalid_delivery" } }, { status: 400 });
+      return new Response(null, { status: await this.#deliverSlack(value) });
+    }
+    if (path === "/internal/github-delivery" && request.method === "POST") {
+      const value = await request.json();
+      if (!isGitHubDelivery(value)) return Response.json({ error: { code: "invalid_delivery" } }, { status: 400 });
+      return new Response(null, { status: await this.#deliverGitHub(value) });
     }
     if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket")
       return new Response("WebSocket upgrade required.", { status: 426 });
@@ -146,6 +181,15 @@ export class SignalRoom {
       }
       return true;
     }
+    if (event.type === "slack-route-revoked") {
+      const key = `${event.appId}:${event.teamId}`;
+      const route = this.#slackRoutes.get(key);
+      if (route && route.linkedAt <= event.through) {
+        route.peer.slackRoutes.delete(key);
+        this.#slackRoutes.delete(key);
+      }
+      return true;
+    }
     return false;
   }
 
@@ -166,6 +210,51 @@ export class SignalRoom {
     const timeout = new Promise<number>((resolve) => setTimeout(() => resolve(503), 10_000));
     const status = await Promise.race([response, timeout]);
     this.#pendingWebhooks.delete(delivery.requestId);
+    return status;
+  }
+
+  async #deliverSlack(delivery: SlackDelivery): Promise<number> {
+    const peer = this.#slackRoutes.get(`${delivery.appId}:${delivery.teamId}`)?.peer;
+    if (!peer || peer.socket.readyState !== WebSocket.OPEN) return 503;
+    return this.#waitForDelivery(peer, delivery.requestId, {
+      type: "slack-delivery",
+      version: SIGNAL_PROTOCOL_VERSION,
+      requestId: delivery.requestId,
+      teamId: delivery.teamId,
+      kind: delivery.kind,
+      retryNum: delivery.retryNum,
+      retryReason: delivery.retryReason,
+      bodyBase64: delivery.bodyBase64,
+    });
+  }
+
+  async #deliverGitHub(delivery: GitHubDelivery): Promise<number> {
+    const peers = this.#githubRepositories.get(delivery.repositoryKey);
+    if (!peers || peers.size === 0) return 204;
+    const statuses = await Promise.all(
+      [...peers].map((peer) => {
+        const requestId = `${delivery.requestId}:${crypto.randomUUID()}`;
+        return this.#waitForDelivery(peer, requestId, {
+          type: "github-delivery",
+          version: SIGNAL_PROTOCOL_VERSION,
+          requestId,
+          event: delivery.event,
+          deliveryId: delivery.deliveryId,
+          bodyBase64: delivery.bodyBase64,
+        });
+      }),
+    );
+    if (statuses.includes(202)) return 202;
+    return statuses.every((status) => status === 404) ? 204 : 503;
+  }
+
+  async #waitForDelivery(peer: Peer, requestId: string, frame: unknown): Promise<number> {
+    if (peer.socket.readyState !== WebSocket.OPEN) return 503;
+    const response = new Promise<number>((resolve) => this.#pendingDeliveries.set(requestId, { peer, resolve }));
+    this.#send(peer.socket, frame);
+    const timeout = new Promise<number>((resolve) => setTimeout(() => resolve(503), 10_000));
+    const status = await Promise.race([response, timeout]);
+    this.#pendingDeliveries.delete(requestId);
     return status;
   }
 
@@ -210,6 +299,11 @@ export class SignalRoom {
       if (pending?.peer === peer) pending.resolve(message.status);
       return;
     }
+    if (isSlackResult(message) || isGitHubResult(message)) {
+      const pending = this.#pendingDeliveries.get(message.requestId);
+      if (pending?.peer === peer) pending.resolve(message.status);
+      return;
+    }
     if (isRelay(message)) return this.#relay(peer, message);
     return this.#fail(socket, "invalid_message", "Unsupported message.", 1008);
   }
@@ -237,6 +331,8 @@ export class SignalRoom {
       connectionId: null,
       multiplex: hello.peer === "host" && hello.multiplex === true,
       webhookRoutes: new Map(),
+      slackRoutes: new Map(),
+      githubRepositories: new Set(),
       webhookFormats: new Set(
         hello.webhookFormats?.filter((format): format is WebhookSignatureFormat => format === "standard-webhooks"),
       ),
@@ -284,23 +380,58 @@ export class SignalRoom {
   }
 
   async #admitIngress(peer: Peer, hello: Hello): Promise<void> {
-    if (!hello.webhookRoute) return this.#fail(peer.socket, "permission_denied", "A webhook route is required.", 1008);
-    const routePayload = await this.#auth.verifyRoute(hello.webhookRoute, WEBHOOK_ROUTE_AUDIENCE);
-    if (routePayload.hid !== peer.claims.hostId || !Array.isArray(routePayload.routes))
-      return this.#fail(peer.socket, "permission_denied", "The webhook route belongs to another host.", 1008);
-    for (const route of routePayload.routes) {
-      if (
-        !isRecord(route) ||
-        typeof route.id !== "string" ||
-        !WEBHOOK_ROUTE_ID_PATTERN.test(route.id) ||
-        typeof route.linkedAt !== "number"
-      )
-        return this.#fail(peer.socket, "authentication_required", "The webhook route is invalid.", 1008);
-      peer.webhookRoutes.set(route.id, route.linkedAt);
-      this.#webhookRoutes.set(route.id, { peer, linkedAt: route.linkedAt });
+    if (!hello.webhookRoute && !hello.slackRoute && !hello.githubRoute)
+      return this.#fail(peer.socket, "permission_denied", "An ingress route is required.", 1008);
+    if (hello.webhookRoute) {
+      const routePayload = await this.#auth.verifyRoute(hello.webhookRoute, WEBHOOK_ROUTE_AUDIENCE);
+      if (routePayload.hid !== peer.claims.hostId || !Array.isArray(routePayload.routes))
+        return this.#fail(peer.socket, "permission_denied", "The webhook route belongs to another host.", 1008);
+      for (const route of routePayload.routes) {
+        if (
+          !isRecord(route) ||
+          typeof route.id !== "string" ||
+          !WEBHOOK_ROUTE_ID_PATTERN.test(route.id) ||
+          typeof route.linkedAt !== "number"
+        )
+          return this.#fail(peer.socket, "authentication_required", "The webhook route is invalid.", 1008);
+        peer.webhookRoutes.set(route.id, route.linkedAt);
+        this.#webhookRoutes.set(route.id, { peer, linkedAt: route.linkedAt });
+      }
+    }
+    if (hello.slackRoute) {
+      const routePayload = await this.#auth.verifyRoute(hello.slackRoute, SLACK_ROUTE_AUDIENCE);
+      if (routePayload.hid !== peer.claims.hostId || !Array.isArray(routePayload.teams))
+        return this.#fail(peer.socket, "permission_denied", "The Slack route belongs to another host.", 1008);
+      for (const team of routePayload.teams) {
+        if (
+          !isRecord(team) ||
+          typeof team.appId !== "string" ||
+          typeof team.id !== "string" ||
+          typeof team.linkedAt !== "number"
+        )
+          return this.#fail(peer.socket, "authentication_required", "The Slack route is invalid.", 1008);
+        const key = `${team.appId}:${team.id}`;
+        peer.slackRoutes.set(key, team.linkedAt);
+        this.#slackRoutes.set(key, { peer, linkedAt: team.linkedAt });
+      }
+    }
+    if (hello.githubRoute) {
+      const routePayload = await this.#auth.verifyRoute(hello.githubRoute, GITHUB_ROUTE_AUDIENCE);
+      if (routePayload.hid !== peer.claims.hostId || !Array.isArray(routePayload.repositories))
+        return this.#fail(peer.socket, "permission_denied", "The GitHub route belongs to another host.", 1008);
+      for (const repository of routePayload.repositories) {
+        if (!isRecord(repository) || typeof repository.id !== "number" || typeof repository.installationId !== "number")
+          return this.#fail(peer.socket, "authentication_required", "The GitHub route is invalid.", 1008);
+        const key = `${repository.installationId}:${repository.id}`;
+        peer.githubRepositories.add(key);
+        const peers = this.#githubRepositories.get(key) ?? new Set<Peer>();
+        peers.add(peer);
+        this.#githubRepositories.set(key, peers);
+      }
     }
     this.#send(peer.socket, await this.#ready(peer, null));
-    this.#send(peer.socket, { type: "webhook-ready", version: SIGNAL_PROTOCOL_VERSION });
+    if (hello.webhookRoute) this.#send(peer.socket, { type: "webhook-ready", version: SIGNAL_PROTOCOL_VERSION });
+    if (hello.githubRoute) this.#send(peer.socket, { type: "github-ready", version: SIGNAL_PROTOCOL_VERSION });
   }
 
   #connect(host: Peer, client: Peer, resumed: boolean): void {
@@ -393,10 +524,24 @@ export class SignalRoom {
     for (const routeId of peer.webhookRoutes.keys()) {
       if (this.#webhookRoutes.get(routeId)?.peer === peer) this.#webhookRoutes.delete(routeId);
     }
+    for (const route of peer.slackRoutes.keys()) {
+      if (this.#slackRoutes.get(route)?.peer === peer) this.#slackRoutes.delete(route);
+    }
+    for (const route of peer.githubRepositories) {
+      const peers = this.#githubRepositories.get(route);
+      peers?.delete(peer);
+      if (peers?.size === 0) this.#githubRepositories.delete(route);
+    }
     for (const [requestId, pending] of this.#pendingWebhooks) {
       if (pending.peer === peer) {
         pending.resolve(503);
         this.#pendingWebhooks.delete(requestId);
+      }
+    }
+    for (const [requestId, pending] of this.#pendingDeliveries) {
+      if (pending.peer === peer) {
+        pending.resolve(503);
+        this.#pendingDeliveries.delete(requestId);
       }
     }
     for (const connection of [...this.#connections.values()]) {
@@ -461,8 +606,52 @@ function isHello(value: unknown): value is Hello {
     typeof value.token === "string" &&
     value.token.length > 0 &&
     (value.webhookRoute === undefined || typeof value.webhookRoute === "string") &&
+    (value.slackRoute === undefined || typeof value.slackRoute === "string") &&
+    (value.githubRoute === undefined || typeof value.githubRoute === "string") &&
     (value.webhookFormats === undefined ||
       (Array.isArray(value.webhookFormats) && value.webhookFormats.every((format) => typeof format === "string")))
+  );
+}
+
+function isSlackDelivery(value: unknown): value is SlackDelivery {
+  return (
+    isRecord(value) &&
+    typeof value.requestId === "string" &&
+    typeof value.appId === "string" &&
+    typeof value.teamId === "string" &&
+    (value.kind === "events" || value.kind === "interactivity") &&
+    (value.retryNum === null || typeof value.retryNum === "number") &&
+    (value.retryReason === null || typeof value.retryReason === "string") &&
+    typeof value.bodyBase64 === "string"
+  );
+}
+
+function isGitHubDelivery(value: unknown): value is GitHubDelivery {
+  return (
+    isRecord(value) &&
+    typeof value.requestId === "string" &&
+    typeof value.event === "string" &&
+    typeof value.deliveryId === "string" &&
+    typeof value.repositoryKey === "string" &&
+    typeof value.bodyBase64 === "string"
+  );
+}
+
+function isSlackResult(value: unknown): value is { requestId: string; status: number } {
+  return (
+    isRecord(value) &&
+    value.type === "slack-delivery-result" &&
+    typeof value.requestId === "string" &&
+    typeof value.status === "number"
+  );
+}
+
+function isGitHubResult(value: unknown): value is { requestId: string; status: number } {
+  return (
+    isRecord(value) &&
+    value.type === "github-delivery-result" &&
+    typeof value.requestId === "string" &&
+    typeof value.status === "number"
   );
 }
 

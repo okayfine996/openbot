@@ -57,6 +57,7 @@ function queuedRoute(message: QueuedSignalMessage): string {
 interface LinkedRouteTicket {
   ticket: string;
   ids: readonly string[] | null;
+  signalUrl: string | null;
 }
 
 type LinkedRouteIds = Record<LinkedRoutePlatform, ReadonlySet<string> | null>;
@@ -87,14 +88,14 @@ export interface SignalIngressOptions {
   /** The Slack route ticket: the workspaces that the account service links to this host. */
   issueSlackRoute(hostId: string): Effect.Effect<LinkedRouteTicket, RemoteWorkflowError>;
   /** The Discord route ticket: the guilds that the account service links to this host. */
-  issueDiscordRoute(hostId: string): Effect.Effect<string, RemoteWorkflowError>;
+  issueDiscordRoute(hostId: string): Effect.Effect<{ ticket: string; signalUrl: string | null }, RemoteWorkflowError>;
   /** The generic webhook route ticket: route IDs registered by this host in account metadata. */
-  issueWebhookRoute(hostId: string): Effect.Effect<string, RemoteWorkflowError>;
+  issueWebhookRoute(hostId: string): Effect.Effect<{ ticket: string; signalUrl: string | null }, RemoteWorkflowError>;
   /**
    * The GitHub route ticket: the repositories that this host's GitHub triggers watch, as the account
    * service confirms them with the GitHub sign-in.
    */
-  issueGitHubRoute(hostId: string): Effect.Effect<string, RemoteWorkflowError>;
+  issueGitHubRoute(hostId: string): Effect.Effect<{ ticket: string; signalUrl: string | null }, RemoteWorkflowError>;
   /**
    * The Telegram route ticket: the chats that the account service links to this host. A failure, such
    * as an account service without Telegram, leaves the socket without Telegram chats until it opens
@@ -113,9 +114,9 @@ class SignalIngressAccount extends Context.Service<
   {
     ticket(hostId: string): Effect.Effect<{ ticket: string; signalUrl: string }, RemoteWorkflowError>;
     slackRoute(hostId: string): Effect.Effect<LinkedRouteTicket, RemoteWorkflowError>;
-    discordRoute(hostId: string): Effect.Effect<string, RemoteWorkflowError>;
-    webhookRoute(hostId: string): Effect.Effect<string, RemoteWorkflowError>;
-    githubRoute(hostId: string): Effect.Effect<string, RemoteWorkflowError>;
+    discordRoute(hostId: string): Effect.Effect<{ ticket: string; signalUrl: string | null }, RemoteWorkflowError>;
+    webhookRoute(hostId: string): Effect.Effect<{ ticket: string; signalUrl: string | null }, RemoteWorkflowError>;
+    githubRoute(hostId: string): Effect.Effect<{ ticket: string; signalUrl: string | null }, RemoteWorkflowError>;
     telegramRoute(hostId: string): Effect.Effect<LinkedRouteTicket | null>;
   }
 >()("openbot/main/SignalIngressAccount") {
@@ -524,9 +525,8 @@ export class SignalIngress implements MessagingIngress {
     const telegram = this.#holds("telegram");
     const webhooks = this.#webhookHolders > 0;
     const github = this.#githubHolders > 0;
-    let webhookTicket: Effect.Effect<string | null, RemoteWorkflowError> = webhooks
-      ? account.webhookRoute(hostId)
-      : Effect.succeed(null);
+    let webhookTicket: Effect.Effect<{ ticket: string; signalUrl: string | null } | null, RemoteWorkflowError> =
+      webhooks ? account.webhookRoute(hostId) : Effect.succeed(null);
     // A failed webhook ticket must not stop the other routes: the socket then connects without it.
     if (webhooks && (slack || discord || telegram || github))
       webhookTicket = webhookTicket.pipe(
@@ -537,7 +537,7 @@ export class SignalIngress implements MessagingIngress {
           }),
         ),
       );
-    let githubTicket: Effect.Effect<string | null, RemoteWorkflowError> = github
+    let githubTicket: Effect.Effect<{ ticket: string; signalUrl: string | null } | null, RemoteWorkflowError> = github
       ? account.githubRoute(hostId)
       : Effect.succeed(null);
     // A failed GitHub ticket, such as a GitHub sign-in that expired, must not stop the other routes.
@@ -568,10 +568,10 @@ export class SignalIngress implements MessagingIngress {
     const [bootstrap, slackRoute, discordRoute, webhookRoute, telegramRoute, githubRoute] = issued.success;
     const routes = {
       ...(slackRoute === null ? {} : { slackRoute: slackRoute.ticket }),
-      ...(discordRoute === null ? {} : { discordRoute }),
-      ...(webhookRoute === null ? {} : { webhookRoute }),
+      ...(discordRoute === null ? {} : { discordRoute: discordRoute.ticket }),
+      ...(webhookRoute === null ? {} : { webhookRoute: webhookRoute.ticket }),
       ...(telegramRoute === null ? {} : { telegramRoute: telegramRoute.ticket }),
-      ...(githubRoute === null ? {} : { githubRoute }),
+      ...(githubRoute === null ? {} : { githubRoute: githubRoute.ticket }),
     };
     // Loaded once: two opens at the same time must not make two keys.
     const queueKey = yield* this.#loadQueueKey;
@@ -582,7 +582,10 @@ export class SignalIngress implements MessagingIngress {
     this.#telegramMissing = telegram && telegramRoute === null;
     if (telegram && telegramRoute !== null) this.#telegramBackoffMs = BACKOFF_START_MS;
     this.#pendingLinkedRoutes = { slack: linkedRouteIds(slackRoute), telegram: linkedRouteIds(telegramRoute) };
-    const socket = new WebSocket(bootstrap.signalUrl);
+    const signalUrl =
+      [slackRoute, discordRoute, webhookRoute, telegramRoute, githubRoute].find((route) => route?.signalUrl)
+        ?.signalUrl ?? bootstrap.signalUrl;
+    const socket = new WebSocket(signalUrl);
     this.#socket = socket;
     // A socket that stalls before `ready` closes, so that the retry opens a new one.
     this.#clearReadyDeadline();
@@ -590,8 +593,8 @@ export class SignalIngress implements MessagingIngress {
       this.#readyDeadline = null;
       if (socket === this.#socket) socket.terminate();
     }, READY_TIMEOUT_MS);
-    this.#apiUrl = discordApiUrl(bootstrap.signalUrl);
-    this.#signalOrigin = signalHttpOrigin(bootstrap.signalUrl);
+    this.#apiUrl = discordApiUrl(signalUrl);
+    this.#signalOrigin = signalHttpOrigin(signalUrl);
     socket.on("open", () => {
       const hello: SignalClientMessage = {
         type: "hello",

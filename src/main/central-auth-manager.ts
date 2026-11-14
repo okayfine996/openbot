@@ -132,10 +132,14 @@ function decodeLinkedRoute(
   value: unknown,
   label: string,
   field: "teams" | "chats",
-): { ticket: string; ids: string[] | null } {
+): { ticket: string; ids: string[] | null; signalUrl: string | null } {
   const record = decodeRecord(value, label);
   const ids = record[field];
-  return { ticket: requiredString(record, "ticket"), ids: Array.isArray(ids) && ids.every(isString) ? ids : null };
+  return {
+    ticket: requiredString(record, "ticket"),
+    ids: Array.isArray(ids) && ids.every(isString) ? ids : null,
+    signalUrl: isString(record.signalUrl) ? record.signalUrl : null,
+  };
 }
 
 /**
@@ -753,12 +757,18 @@ export class CentralAuthManager extends EventEmitter<CentralAuthEvents> {
     function* (
       this: CentralAuthManager,
       hostId: string,
-    ): Effect.fn.Return<string, CentralAuthOperationError, CentralAuthTransport> {
+    ): Effect.fn.Return<{ ticket: string; signalUrl: string | null }, CentralAuthOperationError, CentralAuthTransport> {
       const machineToken = yield* this.#hostMachineToken(hostId);
       return yield* this.#requestEffect(
         `/v2/remote/hosts/${encodeURIComponent(hostId)}/webhook-route`,
         { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ machineToken }) },
-        (value) => requiredString(decodeRecord(value, "Webhook route"), "ticket"),
+        (value) => {
+          const record = decodeRecord(value, "Webhook route");
+          return {
+            ticket: requiredString(record, "ticket"),
+            signalUrl: isString(record.signalUrl) ? record.signalUrl : null,
+          };
+        },
       );
     },
     (operation) => this.#owned(operation),
@@ -842,7 +852,11 @@ export class CentralAuthManager extends EventEmitter<CentralAuthEvents> {
     function* (
       this: CentralAuthManager,
       hostId: string,
-    ): Effect.fn.Return<{ ticket: string; ids: string[] | null }, CentralAuthOperationError, CentralAuthTransport> {
+    ): Effect.fn.Return<
+      { ticket: string; ids: string[] | null; signalUrl: string | null },
+      CentralAuthOperationError,
+      CentralAuthTransport
+    > {
       const machineToken = yield* this.#hostMachineToken(hostId);
       return yield* this.#requestEffect(
         `/v2/remote/hosts/${encodeURIComponent(hostId)}/slack-route`,
@@ -884,12 +898,18 @@ export class CentralAuthManager extends EventEmitter<CentralAuthEvents> {
     function* (
       this: CentralAuthManager,
       hostId: string,
-    ): Effect.fn.Return<string, CentralAuthOperationError, CentralAuthTransport> {
+    ): Effect.fn.Return<{ ticket: string; signalUrl: string | null }, CentralAuthOperationError, CentralAuthTransport> {
       const machineToken = yield* this.#hostMachineToken(hostId);
       return yield* this.#requestEffect(
         `/v2/remote/hosts/${encodeURIComponent(hostId)}/discord-route`,
         { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ machineToken }) },
-        (value) => requiredString(decodeRecord(value, "Discord route"), "ticket"),
+        (value) => {
+          const record = decodeRecord(value, "Discord route");
+          return {
+            ticket: requiredString(record, "ticket"),
+            signalUrl: isString(record.signalUrl) ? record.signalUrl : null,
+          };
+        },
       );
     },
     (operation) => this.#owned(operation),
@@ -926,7 +946,11 @@ export class CentralAuthManager extends EventEmitter<CentralAuthEvents> {
     function* (
       this: CentralAuthManager,
       hostId: string,
-    ): Effect.fn.Return<{ ticket: string; ids: string[] | null }, CentralAuthOperationError, CentralAuthTransport> {
+    ): Effect.fn.Return<
+      { ticket: string; ids: string[] | null; signalUrl: string | null },
+      CentralAuthOperationError,
+      CentralAuthTransport
+    > {
       const machineToken = yield* this.#hostMachineToken(hostId);
       return yield* this.#requestEffect(
         `/v2/remote/hosts/${encodeURIComponent(hostId)}/telegram-route`,
@@ -2796,6 +2820,7 @@ export interface GitHubRouteTicketRepository extends GitHubRouteRepository {
 export interface GitHubRouteTicket {
   ticket: string;
   repositories: GitHubRouteTicketRepository[];
+  signalUrl: string | null;
 }
 
 function decodeGitHubRouteTicket(value: unknown): GitHubRouteTicket {
@@ -2804,6 +2829,7 @@ function decodeGitHubRouteTicket(value: unknown): GitHubRouteTicket {
   if (!Array.isArray(repositories)) throw new Error("The GitHub route has no repository list.");
   return {
     ticket: requiredString(record, "ticket"),
+    signalUrl: isString(record.signalUrl) ? record.signalUrl : null,
     repositories: repositories.map((repository) => {
       if (
         !isDynamicRecord(repository) ||

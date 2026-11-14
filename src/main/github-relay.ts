@@ -83,7 +83,7 @@ export class GitHubRelay {
       .issueGitHubRoute(hostId, token, repositories)
       .pipe(toRemoteWorkflowError);
     this.#routed = new Map(issued.repositories.map((repository) => [repository.fullName.toLowerCase(), repository]));
-    return issued.ticket;
+    return { ticket: issued.ticket, signalUrl: issued.signalUrl };
   }).bind(this);
 }
 

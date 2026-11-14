@@ -852,7 +852,9 @@ interface MessagingServicesContext {
   /** Read on each call: the team store that names this host is built after messaging. */
   readHostId: () => string | null;
   /** The GitHub route ticket of the ingress socket; the GitHub relay holds the repository list. */
-  issueGitHubRoute: (hostId: string) => Effect.Effect<string, RemoteWorkflowError>;
+  issueGitHubRoute: (
+    hostId: string,
+  ) => Effect.Effect<{ ticket: string; signalUrl: string | null }, RemoteWorkflowError>;
   openLink: (url: string) => Promise<void>;
 }
 

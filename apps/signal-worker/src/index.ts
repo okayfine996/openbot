@@ -1,11 +1,22 @@
 import type { RemoteAuthEvent } from "@openbot/contracts/signal-protocol/auth-events";
 import {
+  GITHUB_DELIVERY_BODY_BYTES_LIMIT,
+  GITHUB_DELIVERY_HEADER,
+  GITHUB_DELIVERY_ID_PATTERN,
+  GITHUB_EVENT_HEADER,
+  GITHUB_EVENT_PATTERN,
+  GITHUB_EVENTS_PATH,
+  GITHUB_SIGNATURE_HEADER,
+  GITHUB_SIGNATURE_PATTERN,
+} from "@openbot/contracts/signal-protocol/github-route";
+import {
   STANDARD_WEBHOOK_HEADER_SETS,
   WEBHOOK_DELIVERY_ID_HEADER,
   WEBHOOK_ROUTE_ID_PATTERN,
   WEBHOOK_SIGNATURE_HEADER,
   WEBHOOK_TIMESTAMP_HEADER,
 } from "@openbot/contracts/signal-protocol/webhook-route";
+import { readGitHubRepository, readSlackRequest, verifyGitHubSignature, verifySlackSignature } from "./ingress";
 import { SignalRoom } from "./signal-room";
 
 export { SignalRoom };
@@ -81,6 +92,79 @@ export default {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(delivery),
+        }),
+      );
+    }
+    if (url.pathname === "/v1/slack/events" && request.method === "POST") {
+      const body = await request.arrayBuffer();
+      if (body.byteLength > 64 * 1024) return new Response(null, { status: 413 });
+      const timestamp = request.headers.get("x-slack-request-timestamp") ?? "";
+      const signature = request.headers.get("x-slack-signature") ?? "";
+      const parsed = readSlackRequest(new Uint8Array(body));
+      const signer = parsed?.appId
+        ? (env.SLACK_SIGNING_SECRET ?? "")
+            .split(",")
+            .map((entry) => entry.trim().split(":", 2))
+            .find(
+              ([appId, secret]) =>
+                appId === parsed.appId &&
+                secret &&
+                verifySlackSignature(new Uint8Array(body), timestamp, signature, secret),
+            )
+        : undefined;
+      if (!parsed || !signer) return new Response(null, { status: 401 });
+      if (parsed.challenge)
+        return new Response(parsed.challenge, { status: 200, headers: { "Content-Type": "text/plain" } });
+      const id = env.SIGNAL_ROOM.idFromName("global");
+      return env.SIGNAL_ROOM.get(id).fetch(
+        new Request("https://signal-room.internal/internal/slack-delivery", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            requestId: crypto.randomUUID(),
+            appId: parsed.appId,
+            teamId: parsed.teamId,
+            kind: parsed.kind,
+            retryNum: Number.isInteger(Number(request.headers.get("x-slack-retry-num")))
+              ? Number(request.headers.get("x-slack-retry-num"))
+              : null,
+            retryReason: request.headers.get("x-slack-retry-reason"),
+            bodyBase64: encodeBase64(new Uint8Array(body)),
+          }),
+        }),
+      );
+    }
+    if (url.pathname === GITHUB_EVENTS_PATH && request.method === "POST") {
+      const body = await request.arrayBuffer();
+      if (body.byteLength > GITHUB_DELIVERY_BODY_BYTES_LIMIT) return new Response(null, { status: 413 });
+      const event = request.headers.get(GITHUB_EVENT_HEADER) ?? "";
+      const deliveryId = request.headers.get(GITHUB_DELIVERY_HEADER) ?? "";
+      const signature = request.headers.get(GITHUB_SIGNATURE_HEADER) ?? "";
+      if (
+        !GITHUB_EVENT_PATTERN.test(event) ||
+        !GITHUB_DELIVERY_ID_PATTERN.test(deliveryId) ||
+        !GITHUB_SIGNATURE_PATTERN.test(signature)
+      )
+        return new Response(null, { status: 400 });
+      if (
+        !env.GITHUB_WEBHOOK_SECRET ||
+        !(await verifyGitHubSignature(new Uint8Array(body), signature, env.GITHUB_WEBHOOK_SECRET))
+      )
+        return new Response(null, { status: 401 });
+      const repository = readGitHubRepository(new Uint8Array(body));
+      if (!repository) return new Response(null, { status: 204 });
+      const id = env.SIGNAL_ROOM.idFromName("global");
+      return env.SIGNAL_ROOM.get(id).fetch(
+        new Request("https://signal-room.internal/internal/github-delivery", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            requestId: crypto.randomUUID(),
+            event,
+            deliveryId,
+            repositoryKey: `${repository.installationId}:${repository.repositoryId}`,
+            bodyBase64: encodeBase64(new Uint8Array(body)),
+          }),
         }),
       );
     }

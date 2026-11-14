@@ -296,6 +296,8 @@ export interface RemoteSignalPlan {
   entryUrl: string;
   /** Optional Team WebRTC Signal Worker. Platform ingress still uses `entryUrl` during migration. */
   teamUrl: string | null;
+  /** Optional ingress Signal Worker. Empty keeps connector ingress on the Bun entry service. */
+  ingressUrl: string | null;
   /** The Signal machines that a host can have as its home, by ID. Empty = no host has a home. */
   homes: ReadonlyMap<string, string>;
   /** The place of each home, by ID. Empty = the hash alone chooses a home, wherever the host is. */
@@ -558,6 +560,7 @@ export class RemoteControlPlane {
       | "REMOTE_TICKET_KEY_ID"
       | "REMOTE_SIGNAL_URL"
       | "REMOTE_SIGNAL_WORKER_URL"
+      | "REMOTE_SIGNAL_INGRESS_WORKER_URL"
       | "REMOTE_SIGNAL_HOMES"
       | "REMOTE_SIGNAL_HOME_LOCATIONS"
       | "REMOTE_AUTH_WEBHOOK_URL"
@@ -2255,7 +2258,7 @@ export class RemoteControlPlane {
       this: RemoteControlPlane,
       hostId: string,
       machineToken: string,
-    ): Effect.fn.Return<{ ticket: string; teams: string[] }, RemoteFailure, RemoteDependencies> {
+    ): Effect.fn.Return<{ ticket: string; teams: string[]; signalUrl: string }, RemoteFailure, RemoteDependencies> {
       const dependencies = yield* RemoteDependencies;
       const signer = dependencies.routeSigner;
       if (!signer) {
@@ -2279,6 +2282,7 @@ export class RemoteControlPlane {
           now: dependencies.now(),
         }),
         teams: teams.map((team) => team.id),
+        signalUrl: dependencies.signal?.ingressUrl ?? dependencies.signal?.entryUrl ?? "",
       };
     },
     (operation) => operation.pipe(Effect.provide(this.#layer)),
@@ -2407,7 +2411,7 @@ export class RemoteControlPlane {
       this: RemoteControlPlane,
       hostId: string,
       machineToken: string,
-    ): Effect.fn.Return<{ ticket: string; routes: string[] }, RemoteFailure, RemoteDependencies> {
+    ): Effect.fn.Return<{ ticket: string; routes: string[]; signalUrl: string }, RemoteFailure, RemoteDependencies> {
       const dependencies = yield* RemoteDependencies;
       const host = yield* this.authenticateHost(hostId, machineToken);
       const rows = yield* remoteCall(() =>
@@ -2424,6 +2428,7 @@ export class RemoteControlPlane {
       return {
         ticket: yield* dependencies.signer.issueWebhookRoute({ hostId, routes, now: dependencies.now() }),
         routes: routes.map((route) => route.id),
+        signalUrl: dependencies.signal?.ingressUrl ?? dependencies.signal?.entryUrl ?? "",
       };
     },
     (operation) => operation.pipe(Effect.provide(this.#layer)),
@@ -2441,7 +2446,7 @@ export class RemoteControlPlane {
       machineToken: string,
       repositories: Effect.Effect<GitHubRepositoryRoute[], GitHubInstallationTokensError>,
     ): Effect.fn.Return<
-      { ticket: string; repositories: GitHubRepositoryRoute[] },
+      { ticket: string; repositories: GitHubRepositoryRoute[]; signalUrl: string },
       RemoteFailure | GitHubInstallationTokensError,
       RemoteDependencies
     > {
@@ -2451,6 +2456,7 @@ export class RemoteControlPlane {
       return {
         ticket: yield* dependencies.signer.issueGitHubRoute({ hostId, repositories: routes, now: dependencies.now() }),
         repositories: routes,
+        signalUrl: dependencies.signal?.ingressUrl ?? dependencies.signal?.entryUrl ?? "",
       };
     },
     (operation) => operation.pipe(Effect.provide(this.#layer)),
@@ -2559,7 +2565,7 @@ export class RemoteControlPlane {
       this: RemoteControlPlane,
       hostId: string,
       machineToken: string,
-    ): Effect.fn.Return<{ ticket: string }, RemoteFailure, RemoteDependencies> {
+    ): Effect.fn.Return<{ ticket: string; signalUrl: string }, RemoteFailure, RemoteDependencies> {
       const dependencies = yield* RemoteDependencies;
       const signer = dependencies.discordRouteSigner;
       if (!signer) {
@@ -2575,7 +2581,10 @@ export class RemoteControlPlane {
           .all<{ guild_id: string; connected_at: number }>(),
       );
       const guilds = rows.results.map((row) => ({ id: row.guild_id, linkedAt: row.connected_at }));
-      return { ticket: yield* signer.issue({ hostId, guilds, now: dependencies.now() }) };
+      return {
+        ticket: yield* signer.issue({ hostId, guilds, now: dependencies.now() }),
+        signalUrl: dependencies.signal?.ingressUrl ?? dependencies.signal?.entryUrl ?? "",
+      };
     },
     (operation) => operation.pipe(Effect.provide(this.#layer)),
   ).bind(this);
@@ -2857,7 +2866,7 @@ export class RemoteControlPlane {
       this: RemoteControlPlane,
       hostId: string,
       machineToken: string,
-    ): Effect.fn.Return<{ ticket: string; chats: string[] }, RemoteFailure, RemoteDependencies> {
+    ): Effect.fn.Return<{ ticket: string; chats: string[]; signalUrl: string }, RemoteFailure, RemoteDependencies> {
       const dependencies = yield* RemoteDependencies;
       const signer = dependencies.routeSigner;
       if (!signer || !dependencies.telegram) return yield* telegramNotConfigured();
@@ -2883,6 +2892,7 @@ export class RemoteControlPlane {
           now: dependencies.now(),
         }),
         chats: chats.map((chat) => chat.id),
+        signalUrl: dependencies.signal?.ingressUrl ?? dependencies.signal?.entryUrl ?? "",
       };
     },
     (operation) => operation.pipe(Effect.provide(this.#layer)),
@@ -3463,7 +3473,11 @@ function remoteSignalNotConfigured(): RemoteControlPlaneError {
 export function remoteSignalPlan(
   bindings: Pick<
     WorkerBindings,
-    "REMOTE_SIGNAL_URL" | "REMOTE_SIGNAL_WORKER_URL" | "REMOTE_SIGNAL_HOMES" | "REMOTE_SIGNAL_HOME_LOCATIONS"
+    | "REMOTE_SIGNAL_URL"
+    | "REMOTE_SIGNAL_WORKER_URL"
+    | "REMOTE_SIGNAL_INGRESS_WORKER_URL"
+    | "REMOTE_SIGNAL_HOMES"
+    | "REMOTE_SIGNAL_HOME_LOCATIONS"
   >,
 ): RemoteSignalPlan | null {
   const entryUrl = bindings.REMOTE_SIGNAL_URL?.trim();
@@ -3486,9 +3500,10 @@ export function remoteSignalPlan(
   }
   // An empty home list is the rollback, so it must work without a change to the locations.
   const teamUrl = optionalSignalUrl(bindings.REMOTE_SIGNAL_WORKER_URL);
-  if (homes.size === 0) return { entryUrl, teamUrl, homes, locations: new Map() };
+  const ingressUrl = optionalSignalUrl(bindings.REMOTE_SIGNAL_INGRESS_WORKER_URL);
+  if (homes.size === 0) return { entryUrl, teamUrl, ingressUrl, homes, locations: new Map() };
   const locations = signalHomeLocations(bindings.REMOTE_SIGNAL_HOME_LOCATIONS ?? "", homes);
-  return locations ? { entryUrl, teamUrl, homes, locations } : null;
+  return locations ? { entryUrl, teamUrl, ingressUrl, homes, locations } : null;
 }
 
 function optionalSignalUrl(value: string | undefined): string | null {
