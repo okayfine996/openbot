@@ -16,7 +16,7 @@ import { type DevInstanceRecord, readDevInstanceRecords, selectDevInstance } fro
 import { isSameWorktree } from "./dev-automation/stack-registry";
 
 const projectRoot = dirname(dirname(fileURLToPath(import.meta.url)));
-const MOBILE_BUNDLE_ID = "run.openbot.mobile";
+const MOBILE_BUNDLE_ID = "com.finefine.openbot";
 const DEFAULT_METRO_PORT = 8081;
 const DESKTOP_TIMEOUT_MS = 5 * 60_000;
 // The first native build takes minutes.

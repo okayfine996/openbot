@@ -405,6 +405,26 @@ To upload, open Apple's Transporter app, sign in, add the `.ipa`, and select **D
 After Apple processes the build, select it in App Store Connect under **TestFlight** and assign
 it to a tester group. Upload is manual; the command does not run EAS Submit.
 
+### Xcode Cloud TestFlight release
+
+The iOS project and CocoaPods lockfile are tracked under `ios/` so Xcode Cloud can discover the
+shared `OpenBot` scheme. Its `ci_scripts/ci_post_clone.sh` installs the pinned Bun 1.4.2 and Node 24
+toolchains, installs the mobile workspace dependencies, and resolves CocoaPods from `Podfile.lock`.
+
+Open `apps/mobile/ios/OpenBot.xcworkspace` in Xcode, then choose **Product > Xcode Cloud > Create
+Workflow**. Connect the forked GitHub repository, select the `OpenBot` scheme, and configure an
+Archive action that uploads to TestFlight. Use the `main` branch for release builds. Enable
+automatic signing for the app and all three extensions; the team is `QFNEHUV3DG`, and the App Group
+is `group.com.finefine.openbot`. Xcode Cloud requires access to the GitHub repository and an Apple
+Developer Program team with permission to create the app record and signing identifiers. During
+workflow setup, create the App Store Connect app record as **OpenBot** with bundle ID
+`com.finefine.openbot` if it does not already exist.
+
+The first Cloud build is the gate for verifying that Apple has registered every target identifier,
+enabled the required capabilities, and provisioned the App Group. Apple processes each uploaded
+build before it appears in TestFlight. Add internal or external tester groups in App Store Connect
+after the app record exists.
+
 ### GitHub Actions TestFlight release
 
 The `Release iOS to TestFlight` workflow builds the selected `main` commit on a GitHub-hosted
@@ -426,15 +446,15 @@ One-time setup:
 3. Keep the iOS distribution certificate and provisioning profiles configured in EAS. CI downloads
    these existing credentials. If they expire or need repair, update them interactively through
    EAS before retrying; the upload API key is not passed to the build step. Each target has its own
-   profile: the app, `ExpoWidgetsTarget` (`run.openbot.mobile.ExpoWidgetsTarget`),
-   `OpenBotNotificationService` (`run.openbot.mobile.NotificationService`, the Notification Service
-   Extension) and `expo-sharing-extension` (`run.openbot.mobile.ShareExtension`, the share extension).
-   Each extension needs the App Group `group.run.openbot.mobile`. When a release adds a
+   profile: the app, `ExpoWidgetsTarget` (`com.finefine.openbot.ExpoWidgetsTarget`),
+   `OpenBotNotificationService` (`com.finefine.openbot.NotificationService`, the Notification Service
+   Extension) and `expo-sharing-extension` (`com.finefine.openbot.ShareExtension`, the share extension).
+   Each extension needs the App Group `group.com.finefine.openbot`. When a release adds a
    target, set up its profile interactively once (`bunx eas-cli credentials -p ios`) before CI builds
    it. Keep the saved push key; do not let EAS make a new one.
 4. Keep the OpenPanel variables in EAS `production` with `Plain text` or `Sensitive` visibility.
    `Secret` variables are unavailable to this local build. Do not copy these values into source.
-5. Ensure App Store Connect has the app `run.openbot.mobile` and the intended TestFlight group.
+5. Ensure App Store Connect has the app `com.finefine.openbot` and the intended TestFlight group.
 
 After this workflow is merged into `main`, authenticate GitHub CLI with `gh auth login`, then run
 from the repository root:

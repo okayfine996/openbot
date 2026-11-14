@@ -15,8 +15,8 @@ import { promisify } from "node:util";
 import { createOpenBotLogger } from "@openbot/logging";
 import { bootedSimulatorIds, hasMobileRuntime } from "./dev-mobile";
 
-const BUNDLE_ID = "run.openbot.mobile";
-const APP_GROUP = "group.run.openbot.mobile";
+const BUNDLE_ID = "com.finefine.openbot";
+const APP_GROUP = "group.com.finefine.openbot";
 // The key and the payload shape of expo-sharing (`ios/shared/Constants.swift`, `ShareProtocol.swift`).
 const PAYLOAD_KEY = "expo-sharing";
 const SHARE_LINK = "openbot://expo-sharing";

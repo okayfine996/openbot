@@ -40,7 +40,7 @@ export interface ShortcutDirectoryAgent {
 }
 
 /** The App Group of the app and its extensions. `app.json` names the same group. */
-const APP_GROUP = "group.run.openbot.mobile";
+const APP_GROUP = "group.com.finefine.openbot";
 const DIRECTORY_FILE = "shortcuts.json";
 
 function directoryFile(): File | null {

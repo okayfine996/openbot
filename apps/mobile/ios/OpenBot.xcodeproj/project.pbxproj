@@ -1,0 +1,1404 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 54;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		000D3BFA8BA4DAD60565111F /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD48317A67075370D82BD2A0 /* ExpoModulesProvider.swift */; };
+		0093D00B523840E5A2F52703 /* openbot-mech.wav in Resources */ = {isa = PBXBuildFile; fileRef = 3718E31AEFDD4587B5BE7BC0 /* openbot-mech.wav */; };
+		034AFA37DF5E47A9BB40DAAA /* Inter-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = E8516B3C10524E06B1EC1E4B /* Inter-SemiBold.ttf */; };
+		12B0B3DB437C45DCA5C921A4 /* KaTeX_Caligraphic-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C8B64ACC0BF04E628AAEA080 /* KaTeX_Caligraphic-Regular.ttf */; };
+		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		14B1EAD3411D469899A810AA /* KaTeX_AMS-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = BABD08BDAB71487088B1E5EE /* KaTeX_AMS-Regular.ttf */; };
+		1A56A3C4B4D0492987B8342C /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2508117AFF6540AAA327C697 /* Constants.swift */; };
+		1C1DB4DA9BE94FFD81F3C074 /* expo-sharing-extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CEB9377A1FED458CAA4A747E /* expo-sharing-extension.appex */; };
+		265536ED74D64158AA4C1A80 /* openbot-warm.wav in Resources */ = {isa = PBXBuildFile; fileRef = 6536F9CB429045BB962E61D9 /* openbot-warm.wav */; };
+		2C93D571A7C4493C8666AA90 /* KaTeX_SansSerif-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 6D1672349F174AD1B2513D17 /* KaTeX_SansSerif-Regular.ttf */; };
+		2CACBFF1D2C748558E7AE68E /* openbot-bubble.wav in Resources */ = {isa = PBXBuildFile; fileRef = E4594FE4188A436A8AE06F8B /* openbot-bubble.wav */; };
+		311B7660CF6F4FDA96CCE443 /* ShareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A459B7C10363469080471114 /* ShareView.swift */; };
+		3677C17005124A9F8E76334C /* Inter-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 18C1681E3D5747979ED8BBA9 /* Inter-Italic.ttf */; };
+		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
+		3FD1DD5AF06E42E493B0254B /* KaTeX_Typewriter-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7119895296484FCBAE280E87 /* KaTeX_Typewriter-Regular.ttf */; };
+		425F302BE3D243A3B4445B0B /* Inter-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2CD66AAB31164ED0A2243288 /* Inter-Medium.ttf */; };
+		4A6EA002145C43B6AAEDD892 /* ShortcutSnippets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7626D5371F034BEABD6913DA /* ShortcutSnippets.swift */; };
+		4B1F12433811FACDC8239FC3 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 246A150D5F33940C78EA18FF /* ExpoModulesProvider.swift */; };
+		4BE3D01612A24884A757EB8A /* ShareSender.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06AB2C7547CB49B69E254B8C /* ShareSender.swift */; };
+		4BF9732A8B3045C0A1353367 /* AppIconPink.icon in Resources */ = {isa = PBXBuildFile; fileRef = 42406B62F801409692B70D30 /* AppIconPink.icon */; };
+		50F46BD0B28B42029BDE124F /* openbot-task.wav in Resources */ = {isa = PBXBuildFile; fileRef = B780AF903D144A19BB4D8938 /* openbot-task.wav */; };
+		52C6A6A33A6685057893A746 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 2AA8D33BC38512EAE3B0833E /* PrivacyInfo.xcprivacy */; };
+		5345DF93820E4EC281642AC2 /* AppIconBlue.icon in Resources */ = {isa = PBXBuildFile; fileRef = 8F95E87E0AF8463E8F57034F /* AppIconBlue.icon */; };
+		56A5826DC23449C3B937D222 /* ShareExtensionData.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA81738C471D466F89C73AC1 /* ShareExtensionData.swift */; };
+		5A17E112D47C45918E2D18A6 /* OpenBotNotificationService.appex in Copy Files */ = {isa = PBXBuildFile; fileRef = F5269B3C35074BD6A448FE5A /* OpenBotNotificationService.appex */; };
+		5D1F41EBECB845DA9F2E9339 /* Inter-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 0428F0A029C24A78A790D8FC /* Inter-Bold.ttf */; };
+		633F3F82480240D1929C2151 /* ShortcutData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08C182BE87A6405CBA52EEC6 /* ShortcutData.swift */; };
+		64679AF1CE5E4711A1A2F61F /* AppIconGray.icon in Resources */ = {isa = PBXBuildFile; fileRef = 04E042063CA2466882FE2E08 /* AppIconGray.icon */; };
+		6DE5ADBEAB3F48FABC716DC1 /* ShareIntoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 832051AA6F404264AF24F085 /* ShareIntoViewController.swift */; };
+		793CACE1461A4F17960378ED /* openbot-press.wav in Resources */ = {isa = PBXBuildFile; fileRef = ED78928A89A5425497A2E4E5 /* openbot-press.wav */; };
+		81353C22DCFE43E7A5BFD197 /* Inter-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8D08DF22FCEC450D93B8ED21 /* Inter-Regular.ttf */; };
+		8D8C7962C5D8B0BCADF8120D /* libPods-ExpoWidgetsTarget.a in Frameworks */ = {isa = PBXBuildFile; fileRef = BEC6A77E3742E1AF1FDF4AA1 /* libPods-ExpoWidgetsTarget.a */; };
+		90725DD984AA40DFAE726022 /* KaTeX_Main-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = D0C73347995449E5B6FF8B67 /* KaTeX_Main-Italic.ttf */; };
+		93017BCE695441AF92A563E5 /* ShareSender.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA9238CDA942460CB616FB92 /* ShareSender.swift */; };
+		93F9D576406C414EA257A6CF /* index.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A50835247B148609EBFDACF /* index.swift */; };
+		96DC4E204AA2426793CC75CE /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EB8580EE77246608B85D8CF /* NotificationService.swift */; };
+		A211203386ED494EB397B604 /* ShortcutSend.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D5B40E0377D4179BCC7CA3D /* ShortcutSend.swift */; };
+		AB52FD43DC8C4123B94469F4 /* AppIconBeige.icon in Resources */ = {isa = PBXBuildFile; fileRef = 08774BDA615540129C648837 /* AppIconBeige.icon */; };
+		AE2C9AA726E441FF937555D6 /* AppIconGold.icon in Resources */ = {isa = PBXBuildFile; fileRef = F71206E0B1D44DD287613A44 /* AppIconGold.icon */; };
+		B53E34D21945414380BB8D41 /* ShareInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = A151C5F964D040068DD6D1A3 /* ShareInput.swift */; };
+		B68EA7AE74354365AC4CBD7E /* share-sender.html in Resources */ = {isa = PBXBuildFile; fileRef = 133686F707EC44D8B0BD7C97 /* share-sender.html */; };
+		B9941F57416E4D35AD6A96AE /* ShortcutIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB34C67A380489C848D88E4 /* ShortcutIntents.swift */; };
+		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
+		BB399AA2333B4FD7A30B7E99 /* KaTeX_Fraktur-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 290C88B134F542AB9DCD64C1 /* KaTeX_Fraktur-Regular.ttf */; };
+		BF9257687C5B4625BBF47DA8 /* KaTeX_Size1-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = FA24223667A44E9BBD165DF4 /* KaTeX_Size1-Regular.ttf */; };
+		C252B1CDFCA341B59294B074 /* KaTeX_Math-BoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B2733512311244D58E76469F /* KaTeX_Math-BoldItalic.ttf */; };
+		C35005489C3D3F2A97613A3E /* libPods-OpenBot.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 483366B356619DAF5FB7A1E1 /* libPods-OpenBot.a */; };
+		C902682C3D2E4D9D807AAEC2 /* ExpoWidgetsTarget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 33CFF462C91F4FD6B505D474 /* ExpoWidgetsTarget.appex */; };
+		D2D3E22307684CCBBCF6154E /* KaTeX_Main-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 09D63B1ADCE8411F9C72AF05 /* KaTeX_Main-Regular.ttf */; };
+		D737406C65C5467E82EFC372 /* ShareProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CA3947F1E0349A5A0098D25 /* ShareProtocol.swift */; };
+		D85365CBD4EC4F2DB9AB60D1 /* KaTeX_Math-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = DC94415FBDDA49FB9FC66F8D /* KaTeX_Math-Italic.ttf */; };
+		D90A9FB52A9642B3AD5F8B6E /* app-icon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 8EE9F629AD114C629550A056 /* app-icon.icon */; };
+		DB14C591239D4B5AA78377E4 /* AppIconWhite.icon in Resources */ = {isa = PBXBuildFile; fileRef = 9A20D0B805784597B7536A3C /* AppIconWhite.icon */; };
+		DC277893E79A4FCF8929BC1D /* AppIconRose.icon in Resources */ = {isa = PBXBuildFile; fileRef = C32D52B1EB314B28ABD0E3A6 /* AppIconRose.icon */; };
+		EA0A3DCF74364E3C976431B4 /* AppIconTerracotta.icon in Resources */ = {isa = PBXBuildFile; fileRef = CDFD274D9C15472C8557BF27 /* AppIconTerracotta.icon */; };
+		EB4A8CBCE8514B77A9E532A6 /* Inter-BoldItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = B69F4FCA0D1B4429A3DBAF51 /* Inter-BoldItalic.ttf */; };
+		EB6A58E208EF422C9EC4F6FD /* Inter-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 93F5CE0C911641D7BF73714C /* Inter-ExtraBold.ttf */; };
+		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
+		F11748442D0307B40044C1D9 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748432D0307B40044C1D9 /* SceneDelegate.swift */; };
+		F1E226873C5D4CE1AA407CEA /* KaTeX_Size2-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F8E5ADA84BE3479C85CAD34B /* KaTeX_Size2-Regular.ttf */; };
+		F712231BECA34B45BE1DDFD0 /* AppIconGreen.icon in Resources */ = {isa = PBXBuildFile; fileRef = D62EDA6881E74FA683D6F2E6 /* AppIconGreen.icon */; };
+		FCEC18491FCA4290BBFD4B48 /* share-sender.html in Resources */ = {isa = PBXBuildFile; fileRef = 7ABCA125656B4FD7AC9CE612 /* share-sender.html */; };
+		FE25CBE2A3C642B9A033738F /* KaTeX_Main-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 5F09A171AF834FAFB5A0C022 /* KaTeX_Main-Bold.ttf */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		9420929EB7EB4D9A98269A09 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 83CBB9F71A601CBA00E9B192 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = BAD24DCC0F8D42E299B833B9;
+			remoteInfo = ExpoWidgetsTarget;
+		};
+		9E5C99B74DEF48E8A0CDE4BC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 83CBB9F71A601CBA00E9B192 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 42D61DB44484469C90BB96F9;
+			remoteInfo = OpenBotNotificationService;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		07A3FEADB5AA4AB0B0C804E2 /* Copy Files */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				5A17E112D47C45918E2D18A6 /* OpenBotNotificationService.appex in Copy Files */,
+			);
+			name = "Copy Files";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5F26914E02274C858B9B6BA6 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FE603D36B084468CB1B68936 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				C902682C3D2E4D9D807AAEC2 /* ExpoWidgetsTarget.appex in Embed Foundation Extensions */,
+				1C1DB4DA9BE94FFD81F3C074 /* expo-sharing-extension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		0428F0A029C24A78A790D8FC /* Inter-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Inter-Bold.ttf"; path = "../assets/fonts/inter/Inter-Bold.ttf"; sourceTree = "<group>"; };
+		04E042063CA2466882FE2E08 /* AppIconGray.icon */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = AppIconGray.icon; path = OpenBot/AppIconGray.icon; sourceTree = "<group>"; };
+		06AB2C7547CB49B69E254B8C /* ShareSender.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; name = ShareSender.swift; path = OpenBot/ShareSender.swift; sourceTree = "<group>"; };
+		08774BDA615540129C648837 /* AppIconBeige.icon */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = AppIconBeige.icon; path = OpenBot/AppIconBeige.icon; sourceTree = "<group>"; };
+		08C182BE87A6405CBA52EEC6 /* ShortcutData.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; name = ShortcutData.swift; path = OpenBot/ShortcutData.swift; sourceTree = "<group>"; };
+		09D63B1ADCE8411F9C72AF05 /* KaTeX_Main-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "KaTeX_Main-Regular.ttf"; path = "../../../node_modules/katex/dist/fonts/KaTeX_Main-Regular.ttf"; sourceTree = "<group>"; };
+		0A50835247B148609EBFDACF /* index.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; name = index.swift; path = index.swift; sourceTree = "<group>"; };
+		0BD3379C46714411984FAEF2 /* expo-sharing-extension.entitlements */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "expo-sharing-extension.entitlements"; path = "expo-sharing-extension.entitlements"; sourceTree = "<group>"; };
+		0EB8580EE77246608B85D8CF /* NotificationService.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; name = NotificationService.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		133686F707EC44D8B0BD7C97 /* share-sender.html */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "share-sender.html"; path = "OpenBot/share-sender.html"; sourceTree = "<group>"; };
+		13B07F961A680F5B00A75B9A /* OpenBot.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OpenBot.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = OpenBot/Images.xcassets; sourceTree = "<group>"; };
+		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = OpenBot/Info.plist; sourceTree = "<group>"; };
+		18C1681E3D5747979ED8BBA9 /* Inter-Italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Inter-Italic.ttf"; path = "../assets/fonts/inter/Inter-Italic.ttf"; sourceTree = "<group>"; };
+		1D5B40E0377D4179BCC7CA3D /* ShortcutSend.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; name = ShortcutSend.swift; path = OpenBot/ShortcutSend.swift; sourceTree = "<group>"; };
+		246A150D5F33940C78EA18FF /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-ExpoWidgetsTarget/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		2508117AFF6540AAA327C697 /* Constants.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; name = Constants.swift; path = "../../../../../node_modules/expo-sharing/ios/shared/Constants.swift"; sourceTree = "<group>"; };
+		290C88B134F542AB9DCD64C1 /* KaTeX_Fraktur-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "KaTeX_Fraktur-Regular.ttf"; path = "../../../node_modules/katex/dist/fonts/KaTeX_Fraktur-Regular.ttf"; sourceTree = "<group>"; };
+		2AA8D33BC38512EAE3B0833E /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = OpenBot/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		2CD66AAB31164ED0A2243288 /* Inter-Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Inter-Medium.ttf"; path = "../assets/fonts/inter/Inter-Medium.ttf"; sourceTree = "<group>"; };
+		33CFF462C91F4FD6B505D474 /* ExpoWidgetsTarget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = undefined; name = ExpoWidgetsTarget.appex; path = ExpoWidgetsTarget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		3718E31AEFDD4587B5BE7BC0 /* openbot-mech.wav */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "openbot-mech.wav"; path = "OpenBot/openbot-mech.wav"; sourceTree = "<group>"; };
+		3C3E55CA74C34645A99B52BF /* ExpoWidgetsLayoutRegistry.config.json */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = ExpoWidgetsLayoutRegistry.config.json; path = ExpoWidgetsLayoutRegistry.config.json; sourceTree = "<group>"; };
+		42406B62F801409692B70D30 /* AppIconPink.icon */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = AppIconPink.icon; path = OpenBot/AppIconPink.icon; sourceTree = "<group>"; };
+		4461AD6492664759B9B8A799 /* Info.plist */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = text.plist.xml; name = Info.plist; path = Info.plist; sourceTree = "<group>"; };
+		483366B356619DAF5FB7A1E1 /* libPods-OpenBot.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-OpenBot.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		5F09A171AF834FAFB5A0C022 /* KaTeX_Main-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "KaTeX_Main-Bold.ttf"; path = "../../../node_modules/katex/dist/fonts/KaTeX_Main-Bold.ttf"; sourceTree = "<group>"; };
+		6536F9CB429045BB962E61D9 /* openbot-warm.wav */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "openbot-warm.wav"; path = "OpenBot/openbot-warm.wav"; sourceTree = "<group>"; };
+		6AA115B3B2764FCFAC5ACA8F /* OpenBotNotificationService-Info.plist */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = text.plist.xml; name = "OpenBotNotificationService-Info.plist"; path = "OpenBotNotificationService-Info.plist"; sourceTree = "<group>"; };
+		6D1672349F174AD1B2513D17 /* KaTeX_SansSerif-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "KaTeX_SansSerif-Regular.ttf"; path = "../../../node_modules/katex/dist/fonts/KaTeX_SansSerif-Regular.ttf"; sourceTree = "<group>"; };
+		7119895296484FCBAE280E87 /* KaTeX_Typewriter-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "KaTeX_Typewriter-Regular.ttf"; path = "../../../node_modules/katex/dist/fonts/KaTeX_Typewriter-Regular.ttf"; sourceTree = "<group>"; };
+		7626D5371F034BEABD6913DA /* ShortcutSnippets.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; name = ShortcutSnippets.swift; path = OpenBot/ShortcutSnippets.swift; sourceTree = "<group>"; };
+		7ABCA125656B4FD7AC9CE612 /* share-sender.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = "share-sender.html"; sourceTree = "<group>"; };
+		7DB34C67A380489C848D88E4 /* ShortcutIntents.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; name = ShortcutIntents.swift; path = OpenBot/ShortcutIntents.swift; sourceTree = "<group>"; };
+		7F2BF4BA3D38BB54415BC98F /* Pods-OpenBot.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-OpenBot.debug.xcconfig"; path = "Target Support Files/Pods-OpenBot/Pods-OpenBot.debug.xcconfig"; sourceTree = "<group>"; };
+		81332F295B67B9B2572BC7C5 /* Pods-OpenBot.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-OpenBot.release.xcconfig"; path = "Target Support Files/Pods-OpenBot/Pods-OpenBot.release.xcconfig"; sourceTree = "<group>"; };
+		832051AA6F404264AF24F085 /* ShareIntoViewController.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; name = ShareIntoViewController.swift; path = ShareIntoViewController.swift; sourceTree = "<group>"; };
+		85237B19DACEC5C8E572C7D6 /* Pods-ExpoWidgetsTarget.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ExpoWidgetsTarget.debug.xcconfig"; path = "Target Support Files/Pods-ExpoWidgetsTarget/Pods-ExpoWidgetsTarget.debug.xcconfig"; sourceTree = "<group>"; };
+		8CA3947F1E0349A5A0098D25 /* ShareProtocol.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; name = ShareProtocol.swift; path = "../../../../../node_modules/expo-sharing/ios/shared/ShareProtocol.swift"; sourceTree = "<group>"; };
+		8D08DF22FCEC450D93B8ED21 /* Inter-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Inter-Regular.ttf"; path = "../assets/fonts/inter/Inter-Regular.ttf"; sourceTree = "<group>"; };
+		8EE9F629AD114C629550A056 /* app-icon.icon */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "app-icon.icon"; path = "OpenBot/app-icon.icon"; sourceTree = "<group>"; };
+		8F95E87E0AF8463E8F57034F /* AppIconBlue.icon */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = AppIconBlue.icon; path = OpenBot/AppIconBlue.icon; sourceTree = "<group>"; };
+		93F5CE0C911641D7BF73714C /* Inter-ExtraBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Inter-ExtraBold.ttf"; path = "../assets/fonts/inter/Inter-ExtraBold.ttf"; sourceTree = "<group>"; };
+		9A20D0B805784597B7536A3C /* AppIconWhite.icon */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = AppIconWhite.icon; path = OpenBot/AppIconWhite.icon; sourceTree = "<group>"; };
+		A151C5F964D040068DD6D1A3 /* ShareInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareInput.swift; sourceTree = "<group>"; };
+		A459B7C10363469080471114 /* ShareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareView.swift; sourceTree = "<group>"; };
+		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = OpenBot/SplashScreen.storyboard; sourceTree = "<group>"; };
+		AA9238CDA942460CB616FB92 /* ShareSender.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSender.swift; sourceTree = "<group>"; };
+		AD48317A67075370D82BD2A0 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-OpenBot/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		B2733512311244D58E76469F /* KaTeX_Math-BoldItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "KaTeX_Math-BoldItalic.ttf"; path = "../../../node_modules/katex/dist/fonts/KaTeX_Math-BoldItalic.ttf"; sourceTree = "<group>"; };
+		B69F4FCA0D1B4429A3DBAF51 /* Inter-BoldItalic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Inter-BoldItalic.ttf"; path = "../assets/fonts/inter/Inter-BoldItalic.ttf"; sourceTree = "<group>"; };
+		B780AF903D144A19BB4D8938 /* openbot-task.wav */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "openbot-task.wav"; path = "OpenBot/openbot-task.wav"; sourceTree = "<group>"; };
+		BABD08BDAB71487088B1E5EE /* KaTeX_AMS-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "KaTeX_AMS-Regular.ttf"; path = "../../../node_modules/katex/dist/fonts/KaTeX_AMS-Regular.ttf"; sourceTree = "<group>"; };
+		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
+		BEC6A77E3742E1AF1FDF4AA1 /* libPods-ExpoWidgetsTarget.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-ExpoWidgetsTarget.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		C0CDE0D0A0AD4474B86B49C3 /* Info.plist */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = text.plist.xml; name = Info.plist; path = Info.plist; sourceTree = "<group>"; };
+		C32D52B1EB314B28ABD0E3A6 /* AppIconRose.icon */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = AppIconRose.icon; path = OpenBot/AppIconRose.icon; sourceTree = "<group>"; };
+		C8B64ACC0BF04E628AAEA080 /* KaTeX_Caligraphic-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "KaTeX_Caligraphic-Regular.ttf"; path = "../../../node_modules/katex/dist/fonts/KaTeX_Caligraphic-Regular.ttf"; sourceTree = "<group>"; };
+		CDFD274D9C15472C8557BF27 /* AppIconTerracotta.icon */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = AppIconTerracotta.icon; path = OpenBot/AppIconTerracotta.icon; sourceTree = "<group>"; };
+		CEB9377A1FED458CAA4A747E /* expo-sharing-extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = undefined; name = "expo-sharing-extension.appex"; path = "expo-sharing-extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		D0C73347995449E5B6FF8B67 /* KaTeX_Main-Italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "KaTeX_Main-Italic.ttf"; path = "../../../node_modules/katex/dist/fonts/KaTeX_Main-Italic.ttf"; sourceTree = "<group>"; };
+		D62EDA6881E74FA683D6F2E6 /* AppIconGreen.icon */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = AppIconGreen.icon; path = OpenBot/AppIconGreen.icon; sourceTree = "<group>"; };
+		D964241FF9EA47DDBB1AE001 /* ExpoWidgetsTarget.entitlements */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = ExpoWidgetsTarget.entitlements; path = ExpoWidgetsTarget.entitlements; sourceTree = "<group>"; };
+		DC94415FBDDA49FB9FC66F8D /* KaTeX_Math-Italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "KaTeX_Math-Italic.ttf"; path = "../../../node_modules/katex/dist/fonts/KaTeX_Math-Italic.ttf"; sourceTree = "<group>"; };
+		E23D50836F67B6F01ED1137F /* Pods-ExpoWidgetsTarget.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ExpoWidgetsTarget.release.xcconfig"; path = "Target Support Files/Pods-ExpoWidgetsTarget/Pods-ExpoWidgetsTarget.release.xcconfig"; sourceTree = "<group>"; };
+		E4594FE4188A436A8AE06F8B /* openbot-bubble.wav */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "openbot-bubble.wav"; path = "OpenBot/openbot-bubble.wav"; sourceTree = "<group>"; };
+		E8516B3C10524E06B1EC1E4B /* Inter-SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Inter-SemiBold.ttf"; path = "../assets/fonts/inter/Inter-SemiBold.ttf"; sourceTree = "<group>"; };
+		EA81738C471D466F89C73AC1 /* ShareExtensionData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareExtensionData.swift; sourceTree = "<group>"; };
+		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
+		ED78928A89A5425497A2E4E5 /* openbot-press.wav */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "openbot-press.wav"; path = "OpenBot/openbot-press.wav"; sourceTree = "<group>"; };
+		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = OpenBot/AppDelegate.swift; sourceTree = "<group>"; };
+		F11748432D0307B40044C1D9 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SceneDelegate.swift; path = OpenBot/SceneDelegate.swift; sourceTree = "<group>"; };
+		F11748442D0722820044C1D9 /* OpenBot-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "OpenBot-Bridging-Header.h"; path = "OpenBot/OpenBot-Bridging-Header.h"; sourceTree = "<group>"; };
+		F5269B3C35074BD6A448FE5A /* OpenBotNotificationService.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = undefined; name = OpenBotNotificationService.appex; path = OpenBotNotificationService.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		F71206E0B1D44DD287613A44 /* AppIconGold.icon */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = AppIconGold.icon; path = OpenBot/AppIconGold.icon; sourceTree = "<group>"; };
+		F8E5ADA84BE3479C85CAD34B /* KaTeX_Size2-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "KaTeX_Size2-Regular.ttf"; path = "../../../node_modules/katex/dist/fonts/KaTeX_Size2-Regular.ttf"; sourceTree = "<group>"; };
+		FA24223667A44E9BBD165DF4 /* KaTeX_Size1-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "KaTeX_Size1-Regular.ttf"; path = "../../../node_modules/katex/dist/fonts/KaTeX_Size1-Regular.ttf"; sourceTree = "<group>"; };
+		FE7C3C3EF50E4AA18C94AEF7 /* OpenBotNotificationService.entitlements */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = OpenBotNotificationService.entitlements; path = OpenBotNotificationService.entitlements; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		13B07F8C1A680F5B00A75B9A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C35005489C3D3F2A97613A3E /* libPods-OpenBot.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		49733FD042E7405E942445D5 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8D8C7962C5D8B0BCADF8120D /* libPods-ExpoWidgetsTarget.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		736A3653770140FFABEF9083 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		97B09879E7FB4D7489C5FD99 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		01F0781B6C6443AC9B66C44E /* expo-sharing-extension */ = {
+			isa = PBXGroup;
+			children = (
+				832051AA6F404264AF24F085 /* ShareIntoViewController.swift */,
+				0BD3379C46714411984FAEF2 /* expo-sharing-extension.entitlements */,
+				C0CDE0D0A0AD4474B86B49C3 /* Info.plist */,
+				96DC32E758C9419B82B0AA09 /* shared */,
+				EA81738C471D466F89C73AC1 /* ShareExtensionData.swift */,
+				A151C5F964D040068DD6D1A3 /* ShareInput.swift */,
+				AA9238CDA942460CB616FB92 /* ShareSender.swift */,
+				A459B7C10363469080471114 /* ShareView.swift */,
+				7ABCA125656B4FD7AC9CE612 /* share-sender.html */,
+			);
+			name = "expo-sharing-extension";
+			path = "expo-sharing-extension";
+			sourceTree = "<group>";
+		};
+		02426F215FD843CD87EB791C /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				8D08DF22FCEC450D93B8ED21 /* Inter-Regular.ttf */,
+				18C1681E3D5747979ED8BBA9 /* Inter-Italic.ttf */,
+				2CD66AAB31164ED0A2243288 /* Inter-Medium.ttf */,
+				E8516B3C10524E06B1EC1E4B /* Inter-SemiBold.ttf */,
+				0428F0A029C24A78A790D8FC /* Inter-Bold.ttf */,
+				B69F4FCA0D1B4429A3DBAF51 /* Inter-BoldItalic.ttf */,
+				93F5CE0C911641D7BF73714C /* Inter-ExtraBold.ttf */,
+				BABD08BDAB71487088B1E5EE /* KaTeX_AMS-Regular.ttf */,
+				C8B64ACC0BF04E628AAEA080 /* KaTeX_Caligraphic-Regular.ttf */,
+				290C88B134F542AB9DCD64C1 /* KaTeX_Fraktur-Regular.ttf */,
+				5F09A171AF834FAFB5A0C022 /* KaTeX_Main-Bold.ttf */,
+				D0C73347995449E5B6FF8B67 /* KaTeX_Main-Italic.ttf */,
+				09D63B1ADCE8411F9C72AF05 /* KaTeX_Main-Regular.ttf */,
+				B2733512311244D58E76469F /* KaTeX_Math-BoldItalic.ttf */,
+				DC94415FBDDA49FB9FC66F8D /* KaTeX_Math-Italic.ttf */,
+				6D1672349F174AD1B2513D17 /* KaTeX_SansSerif-Regular.ttf */,
+				FA24223667A44E9BBD165DF4 /* KaTeX_Size1-Regular.ttf */,
+				F8E5ADA84BE3479C85CAD34B /* KaTeX_Size2-Regular.ttf */,
+				7119895296484FCBAE280E87 /* KaTeX_Typewriter-Regular.ttf */,
+			);
+			name = Resources;
+			path = "";
+			sourceTree = "<group>";
+		};
+		0DD6096D9FC7495B71E7670A /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				85237B19DACEC5C8E572C7D6 /* Pods-ExpoWidgetsTarget.debug.xcconfig */,
+				E23D50836F67B6F01ED1137F /* Pods-ExpoWidgetsTarget.release.xcconfig */,
+				7F2BF4BA3D38BB54415BC98F /* Pods-OpenBot.debug.xcconfig */,
+				81332F295B67B9B2572BC7C5 /* Pods-OpenBot.release.xcconfig */,
+			);
+			name = Pods;
+			path = Pods;
+			sourceTree = "<group>";
+		};
+		13B07FAE1A68108700A75B9A /* OpenBot */ = {
+			isa = PBXGroup;
+			children = (
+				F11748412D0307B40044C1D9 /* AppDelegate.swift */,
+				F11748432D0307B40044C1D9 /* SceneDelegate.swift */,
+				F11748442D0722820044C1D9 /* OpenBot-Bridging-Header.h */,
+				BB2F792B24A3F905000567C9 /* Supporting */,
+				13B07FB51A68108700A75B9A /* Images.xcassets */,
+				13B07FB61A68108700A75B9A /* Info.plist */,
+				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
+				8EE9F629AD114C629550A056 /* app-icon.icon */,
+				08C182BE87A6405CBA52EEC6 /* ShortcutData.swift */,
+				7DB34C67A380489C848D88E4 /* ShortcutIntents.swift */,
+				1D5B40E0377D4179BCC7CA3D /* ShortcutSend.swift */,
+				7626D5371F034BEABD6913DA /* ShortcutSnippets.swift */,
+				06AB2C7547CB49B69E254B8C /* ShareSender.swift */,
+				133686F707EC44D8B0BD7C97 /* share-sender.html */,
+				B780AF903D144A19BB4D8938 /* openbot-task.wav */,
+				6536F9CB429045BB962E61D9 /* openbot-warm.wav */,
+				3718E31AEFDD4587B5BE7BC0 /* openbot-mech.wav */,
+				E4594FE4188A436A8AE06F8B /* openbot-bubble.wav */,
+				ED78928A89A5425497A2E4E5 /* openbot-press.wav */,
+				C32D52B1EB314B28ABD0E3A6 /* AppIconRose.icon */,
+				CDFD274D9C15472C8557BF27 /* AppIconTerracotta.icon */,
+				F71206E0B1D44DD287613A44 /* AppIconGold.icon */,
+				D62EDA6881E74FA683D6F2E6 /* AppIconGreen.icon */,
+				8F95E87E0AF8463E8F57034F /* AppIconBlue.icon */,
+				42406B62F801409692B70D30 /* AppIconPink.icon */,
+				08774BDA615540129C648837 /* AppIconBeige.icon */,
+				04E042063CA2466882FE2E08 /* AppIconGray.icon */,
+				9A20D0B805784597B7536A3C /* AppIconWhite.icon */,
+				2AA8D33BC38512EAE3B0833E /* PrivacyInfo.xcprivacy */,
+			);
+			name = OpenBot;
+			sourceTree = "<group>";
+		};
+		22769795A8854B33B84F3EA1 /* ExpoWidgetsTarget */ = {
+			isa = PBXGroup;
+			children = (
+				D964241FF9EA47DDBB1AE001 /* ExpoWidgetsTarget.entitlements */,
+				4461AD6492664759B9B8A799 /* Info.plist */,
+				3C3E55CA74C34645A99B52BF /* ExpoWidgetsLayoutRegistry.config.json */,
+				0A50835247B148609EBFDACF /* index.swift */,
+			);
+			name = ExpoWidgetsTarget;
+			path = ExpoWidgetsTarget;
+			sourceTree = "<group>";
+		};
+		2C48989D38F5469196E8862B /* OpenBotNotificationService */ = {
+			isa = PBXGroup;
+			children = (
+				0EB8580EE77246608B85D8CF /* NotificationService.swift */,
+				6AA115B3B2764FCFAC5ACA8F /* OpenBotNotificationService-Info.plist */,
+				FE7C3C3EF50E4AA18C94AEF7 /* OpenBotNotificationService.entitlements */,
+			);
+			name = OpenBotNotificationService;
+			path = OpenBotNotificationService;
+			sourceTree = "<group>";
+		};
+		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
+				BEC6A77E3742E1AF1FDF4AA1 /* libPods-ExpoWidgetsTarget.a */,
+				483366B356619DAF5FB7A1E1 /* libPods-OpenBot.a */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Libraries;
+			sourceTree = "<group>";
+		};
+		83AC375A6198513F994A7B1F /* ExpoModulesProviders */ = {
+			isa = PBXGroup;
+			children = (
+				A46B7F98A8269DA05A4CB230 /* ExpoWidgetsTarget */,
+				D2187717B68738B1B5416189 /* OpenBot */,
+			);
+			name = ExpoModulesProviders;
+			sourceTree = "<group>";
+		};
+		83CBB9F61A601CBA00E9B192 = {
+			isa = PBXGroup;
+			children = (
+				13B07FAE1A68108700A75B9A /* OpenBot */,
+				832341AE1AAA6A7D00B99B32 /* Libraries */,
+				83CBBA001A601CBA00E9B192 /* Products */,
+				2D16E6871FA4F8E400B85C8A /* Frameworks */,
+				2C48989D38F5469196E8862B /* OpenBotNotificationService */,
+				22769795A8854B33B84F3EA1 /* ExpoWidgetsTarget */,
+				02426F215FD843CD87EB791C /* Resources */,
+				01F0781B6C6443AC9B66C44E /* expo-sharing-extension */,
+				0DD6096D9FC7495B71E7670A /* Pods */,
+				83AC375A6198513F994A7B1F /* ExpoModulesProviders */,
+			);
+			indentWidth = 2;
+			sourceTree = "<group>";
+			tabWidth = 2;
+			usesTabs = 0;
+		};
+		83CBBA001A601CBA00E9B192 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				13B07F961A680F5B00A75B9A /* OpenBot.app */,
+				F5269B3C35074BD6A448FE5A /* OpenBotNotificationService.appex */,
+				33CFF462C91F4FD6B505D474 /* ExpoWidgetsTarget.appex */,
+				CEB9377A1FED458CAA4A747E /* expo-sharing-extension.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		96DC32E758C9419B82B0AA09 /* shared */ = {
+			isa = PBXGroup;
+			children = (
+				2508117AFF6540AAA327C697 /* Constants.swift */,
+				8CA3947F1E0349A5A0098D25 /* ShareProtocol.swift */,
+			);
+			name = shared;
+			path = shared;
+			sourceTree = "<group>";
+		};
+		A46B7F98A8269DA05A4CB230 /* ExpoWidgetsTarget */ = {
+			isa = PBXGroup;
+			children = (
+				246A150D5F33940C78EA18FF /* ExpoModulesProvider.swift */,
+			);
+			name = ExpoWidgetsTarget;
+			sourceTree = "<group>";
+		};
+		BB2F792B24A3F905000567C9 /* Supporting */ = {
+			isa = PBXGroup;
+			children = (
+				BB2F792C24A3F905000567C9 /* Expo.plist */,
+			);
+			name = Supporting;
+			path = OpenBot/Supporting;
+			sourceTree = "<group>";
+		};
+		D2187717B68738B1B5416189 /* OpenBot */ = {
+			isa = PBXGroup;
+			children = (
+				AD48317A67075370D82BD2A0 /* ExpoModulesProvider.swift */,
+			);
+			name = OpenBot;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		13B07F861A680F5B00A75B9A /* OpenBot */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "OpenBot" */;
+			buildPhases = (
+				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
+				3F72A441B365B4635AB500C9 /* [Expo] Configure project */,
+				13B07F871A680F5B00A75B9A /* Sources */,
+				13B07F8C1A680F5B00A75B9A /* Frameworks */,
+				13B07F8E1A680F5B00A75B9A /* Resources */,
+				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
+				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
+				6A9944CA65114EAC8E48FC87 /* [Expo Dev Launcher] Strip Local Network Keys for Release */,
+				07A3FEADB5AA4AB0B0C804E2 /* Copy Files */,
+				FE603D36B084468CB1B68936 /* Embed Foundation Extensions */,
+				5F26914E02274C858B9B6BA6 /* Embed Foundation Extensions */,
+				18EFF2CB516C2C404C709BD9 /* [CP] Embed Pods Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				7E2F6613A6A8492AB7E38ED7 /* PBXTargetDependency */,
+				8128E399F1034EEE85BFE43A /* PBXTargetDependency */,
+			);
+			name = OpenBot;
+			productName = OpenBot;
+			productReference = 13B07F961A680F5B00A75B9A /* OpenBot.app */;
+			productType = "com.apple.product-type.application";
+		};
+		42D61DB44484469C90BB96F9 /* OpenBotNotificationService */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 00F44230BD0E4655B453AC9F /* Build configuration list for PBXNativeTarget "OpenBotNotificationService" */;
+			buildPhases = (
+				F84E4B461F0F4130A2D9DD48 /* Sources */,
+				C1848DDC6DC64BDB944F399D /* Resources */,
+				736A3653770140FFABEF9083 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = OpenBotNotificationService;
+			productName = OpenBotNotificationService;
+			productReference = F5269B3C35074BD6A448FE5A /* OpenBotNotificationService.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		43805088AFE14778A761F971 /* expo-sharing-extension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6624B94E95334658B923A3B1 /* Build configuration list for PBXNativeTarget "expo-sharing-extension" */;
+			buildPhases = (
+				B73A7BB90F7148EABD008332 /* Sources */,
+				97B09879E7FB4D7489C5FD99 /* Frameworks */,
+				9151DD77C7D648618DF2E984 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "expo-sharing-extension";
+			productName = "expo-sharing-extension";
+			productReference = CEB9377A1FED458CAA4A747E /* expo-sharing-extension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		BAD24DCC0F8D42E299B833B9 /* ExpoWidgetsTarget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 09B6A9A480AC4E29ACAF57FB /* Build configuration list for PBXNativeTarget "ExpoWidgetsTarget" */;
+			buildPhases = (
+				D00EE0CF48EAEA032E314F01 /* [CP] Check Pods Manifest.lock */,
+				96200964126D9A46761488D9 /* [Expo] Configure project */,
+				9B29D0BECBF24CFA8EB3C275 /* Sources */,
+				49733FD042E7405E942445D5 /* Frameworks */,
+				2E5838223DA2D62951A62B62 /* [CP] Copy Pods Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ExpoWidgetsTarget;
+			productName = ExpoWidgetsTarget;
+			productReference = 33CFF462C91F4FD6B505D474 /* ExpoWidgetsTarget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		83CBB9F71A601CBA00E9B192 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 1130;
+				TargetAttributes = {
+					13B07F861A680F5B00A75B9A = {
+						LastSwiftMigration = 1250;
+					};
+					43805088AFE14778A761F971 = {
+						CreatedOnToolsVersion = 15.1;
+						LastSwiftMigration = 1250;
+						ProvisioningStyle = Automatic;
+					};
+					BAD24DCC0F8D42E299B833B9 = {
+						LastSwiftMigration = 1250;
+					};
+				};
+			};
+			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "OpenBot" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 83CBB9F61A601CBA00E9B192;
+			productRefGroup = 83CBBA001A601CBA00E9B192 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				13B07F861A680F5B00A75B9A /* OpenBot */,
+				42D61DB44484469C90BB96F9 /* OpenBotNotificationService */,
+				BAD24DCC0F8D42E299B833B9 /* ExpoWidgetsTarget */,
+				43805088AFE14778A761F971 /* expo-sharing-extension */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		13B07F8E1A680F5B00A75B9A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
+				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
+				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
+				D90A9FB52A9642B3AD5F8B6E /* app-icon.icon in Resources */,
+				B68EA7AE74354365AC4CBD7E /* share-sender.html in Resources */,
+				81353C22DCFE43E7A5BFD197 /* Inter-Regular.ttf in Resources */,
+				3677C17005124A9F8E76334C /* Inter-Italic.ttf in Resources */,
+				425F302BE3D243A3B4445B0B /* Inter-Medium.ttf in Resources */,
+				034AFA37DF5E47A9BB40DAAA /* Inter-SemiBold.ttf in Resources */,
+				5D1F41EBECB845DA9F2E9339 /* Inter-Bold.ttf in Resources */,
+				EB4A8CBCE8514B77A9E532A6 /* Inter-BoldItalic.ttf in Resources */,
+				EB6A58E208EF422C9EC4F6FD /* Inter-ExtraBold.ttf in Resources */,
+				14B1EAD3411D469899A810AA /* KaTeX_AMS-Regular.ttf in Resources */,
+				12B0B3DB437C45DCA5C921A4 /* KaTeX_Caligraphic-Regular.ttf in Resources */,
+				BB399AA2333B4FD7A30B7E99 /* KaTeX_Fraktur-Regular.ttf in Resources */,
+				FE25CBE2A3C642B9A033738F /* KaTeX_Main-Bold.ttf in Resources */,
+				90725DD984AA40DFAE726022 /* KaTeX_Main-Italic.ttf in Resources */,
+				D2D3E22307684CCBBCF6154E /* KaTeX_Main-Regular.ttf in Resources */,
+				C252B1CDFCA341B59294B074 /* KaTeX_Math-BoldItalic.ttf in Resources */,
+				D85365CBD4EC4F2DB9AB60D1 /* KaTeX_Math-Italic.ttf in Resources */,
+				2C93D571A7C4493C8666AA90 /* KaTeX_SansSerif-Regular.ttf in Resources */,
+				BF9257687C5B4625BBF47DA8 /* KaTeX_Size1-Regular.ttf in Resources */,
+				F1E226873C5D4CE1AA407CEA /* KaTeX_Size2-Regular.ttf in Resources */,
+				3FD1DD5AF06E42E493B0254B /* KaTeX_Typewriter-Regular.ttf in Resources */,
+				50F46BD0B28B42029BDE124F /* openbot-task.wav in Resources */,
+				265536ED74D64158AA4C1A80 /* openbot-warm.wav in Resources */,
+				0093D00B523840E5A2F52703 /* openbot-mech.wav in Resources */,
+				2CACBFF1D2C748558E7AE68E /* openbot-bubble.wav in Resources */,
+				793CACE1461A4F17960378ED /* openbot-press.wav in Resources */,
+				DC277893E79A4FCF8929BC1D /* AppIconRose.icon in Resources */,
+				EA0A3DCF74364E3C976431B4 /* AppIconTerracotta.icon in Resources */,
+				AE2C9AA726E441FF937555D6 /* AppIconGold.icon in Resources */,
+				F712231BECA34B45BE1DDFD0 /* AppIconGreen.icon in Resources */,
+				5345DF93820E4EC281642AC2 /* AppIconBlue.icon in Resources */,
+				4BF9732A8B3045C0A1353367 /* AppIconPink.icon in Resources */,
+				AB52FD43DC8C4123B94469F4 /* AppIconBeige.icon in Resources */,
+				64679AF1CE5E4711A1A2F61F /* AppIconGray.icon in Resources */,
+				DB14C591239D4B5AA78377E4 /* AppIconWhite.icon in Resources */,
+				52C6A6A33A6685057893A746 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9151DD77C7D648618DF2E984 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FCEC18491FCA4290BBFD4B48 /* share-sender.html in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C1848DDC6DC64BDB944F399D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/.xcode.env",
+				"$(SRCROOT)/.xcode.env.local",
+			);
+			name = "Bundle React Native code and images";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [[ -f \"$SRCROOT/.xcode.env\" ]]; then\n  source \"$SRCROOT/.xcode.env\"\nfi\nif [[ -f \"$SRCROOT/.xcode.env.local\" ]]; then\n  source \"$SRCROOT/.xcode.env.local\"\nfi\n\n# The project root by default is one level up from the ios directory\nexport PROJECT_ROOT=\"$PROJECT_DIR\"/..\n\nif [[ \"$CONFIGURATION\" = *Debug* ]]; then\n  export SKIP_BUNDLING=1\nfi\nif [[ -z \"$ENTRY_FILE\" ]]; then\n  # Set the entry JS file using the bundler's entry resolution.\n  export ENTRY_FILE=\"$(\"$NODE_BINARY\" -e \"require('expo/scripts/resolveAppEntry')\" \"$PROJECT_ROOT\" ios absolute | tail -n 1)\"\nfi\n\nif [[ -z \"$CLI_PATH\" ]]; then\n  # Use Expo CLI\n  export CLI_PATH=\"$(\"$NODE_BINARY\" --print \"require.resolve('@expo/cli', { paths: [require.resolve('expo/package.json')] })\")\"\nfi\nif [[ -z \"$BUNDLE_COMMAND\" ]]; then\n  # Default Expo CLI command for bundling\n  export BUNDLE_COMMAND=\"export:embed\"\nfi\n\n# Source .xcode.env.updates if it exists to allow\n# SKIP_BUNDLING to be unset if needed\nif [[ -f \"$SRCROOT/.xcode.env.updates\" ]]; then\n  source \"$SRCROOT/.xcode.env.updates\"\nfi\n# Source local changes to allow overrides\n# if needed\nif [[ -f \"$SRCROOT/.xcode.env.local\" ]]; then\n  source \"$SRCROOT/.xcode.env.local\"\nfi\n\n\"`\"$NODE_BINARY\" --print \"require('path').dirname(require.resolve('react-native/package.json')) + '/scripts/react-native-xcode.sh'\"`\"\n\n";
+		};
+		08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-OpenBot-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		18EFF2CB516C2C404C709BD9 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-OpenBot/Pods-OpenBot-frameworks.sh",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ExpoCamera/ExpoCamera.framework/ExpoCamera",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ExpoCameraBarcodeScanning/ExpoCameraBarcodeScanning.framework/ExpoCameraBarcodeScanning",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ExpoCameraBarcodeScanning/ZXingObjC.framework/ZXingObjC",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ExpoFileSystem/ExpoFileSystem.framework/ExpoFileSystem",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ExpoFont/ExpoFont.framework/ExpoFont",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ExpoImage/ExpoImage.framework/ExpoImage",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ExpoImage/SDWebImage.framework/SDWebImage",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ExpoImage/SDWebImageAVIFCoder.framework/SDWebImageAVIFCoder",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ExpoImage/SDWebImageSVGCoder.framework/SDWebImageSVGCoder",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ExpoImage/SDWebImageWebPCoder.framework/SDWebImageWebPCoder",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ExpoImage/libavif.framework/libavif",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ExpoImageManipulator/ExpoImageManipulator.framework/ExpoImageManipulator",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ExpoMediaLibrary/ExpoMediaLibrary.framework/ExpoMediaLibrary",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ExpoModulesCore/ExpoModulesCore.framework/ExpoModulesCore",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ExpoModulesJSI/ExpoModulesJSI.framework/ExpoModulesJSI",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ExpoModulesWorklets/ExpoModulesWorklets.framework/ExpoModulesWorklets",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ExpoVideo/ExpoVideo.framework/ExpoVideo",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/JitsiWebRTC/WebRTC.framework/WebRTC",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/OpenBotSpeech/SherpaOnnxC.framework/SherpaOnnxC",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/React-Core-prebuilt/React.framework/React",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ReactNativeDependencies/ReactNativeDependencies.framework/ReactNativeDependencies",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermesvm.framework/hermesvm",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ExpoCamera.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ExpoCameraBarcodeScanning.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ZXingObjC.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ExpoFileSystem.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ExpoFont.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ExpoImage.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/SDWebImage.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/SDWebImageAVIFCoder.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/SDWebImageSVGCoder.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/SDWebImageWebPCoder.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/libavif.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ExpoImageManipulator.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ExpoMediaLibrary.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ExpoModulesCore.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ExpoModulesJSI.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ExpoModulesWorklets.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ExpoVideo.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/WebRTC.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/SherpaOnnxC.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/React.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ReactNativeDependencies.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermesvm.framework",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-OpenBot/Pods-OpenBot-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		2E5838223DA2D62951A62B62 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-ExpoWidgetsTarget/Pods-ExpoWidgetsTarget-resources.sh",
+				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoWidgets/ExpoWidgets.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/React-cxxreact/React-cxxreact_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/React-timing/React-timing_privacy.bundle",
+			);
+			name = "[CP] Copy Pods Resources";
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoWidgets.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-cxxreact_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-timing_privacy.bundle",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-ExpoWidgetsTarget/Pods-ExpoWidgetsTarget-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		3F72A441B365B4635AB500C9 /* [Expo] Configure project */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/.xcode.env",
+				"$(SRCROOT)/.xcode.env.local",
+				"$(SRCROOT)/OpenBot/OpenBot.entitlements",
+				"$(SRCROOT)/Pods/Target Support Files/Pods-OpenBot/expo-configure-project.sh",
+			);
+			name = "[Expo] Configure project";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/Pods/Target Support Files/Pods-OpenBot/ExpoModulesProvider.swift",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-OpenBot/expo-configure-project.sh\"\n";
+		};
+		6A9944CA65114EAC8E48FC87 /* [Expo Dev Launcher] Strip Local Network Keys for Release */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[Expo Dev Launcher] Strip Local Network Keys for Release";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Strip dev-launcher-specific local network permission keys from release builds.\n# This only removes _expo._tcp Bonjour services and the dev-launcher usage description.\n# Other Bonjour services and custom descriptions are preserved for production use.\n#\n# Detect debug builds via the DEBUG compile condition rather than the configuration name,\n# so custom debug configurations (e.g. \"Dev\", \"Staging\") that define DEBUG keep the keys.\ncase \" $SWIFT_ACTIVE_COMPILATION_CONDITIONS \" in\n  *\" DEBUG \"*) IS_DEBUG_BUILD=1 ;;\n  *) IS_DEBUG_BUILD=0 ;;\nesac\n\nif [ \"$IS_DEBUG_BUILD\" != \"1\" ]; then\n  PLIST_PATH=\"${TARGET_BUILD_DIR}/${INFOPLIST_PATH}\"\n  if [ -f \"$PLIST_PATH\" ]; then\n    # Check if NSBonjourServices exists\n    if /usr/libexec/PlistBuddy -c \"Print :NSBonjourServices\" \"$PLIST_PATH\" >/dev/null 2>&1; then\n      # Get the count of services\n      COUNT=$(/usr/libexec/PlistBuddy -c \"Print :NSBonjourServices\" \"$PLIST_PATH\" 2>/dev/null | grep \"^    \" | wc -l | tr -d ' ')\n\n      # Remove _expo._tcp\n      for ((i=COUNT-1; i>=0; i--)); do\n        SERVICE=$(/usr/libexec/PlistBuddy -c \"Print :NSBonjourServices:$i\" \"$PLIST_PATH\" 2>/dev/null || echo \"\")\n        if echo \"$SERVICE\" | grep -q \"_expo._tcp\"; then\n          /usr/libexec/PlistBuddy -c \"Delete :NSBonjourServices:$i\" \"$PLIST_PATH\" 2>/dev/null || true\n        fi\n      done\n\n      # If the array is now empty, remove it entirely\n      REMAINING=$(/usr/libexec/PlistBuddy -c \"Print :NSBonjourServices\" \"$PLIST_PATH\" 2>/dev/null | grep \"^    \" | wc -l | tr -d ' ')\n      if [ \"$REMAINING\" -eq \"0\" ]; then\n        /usr/libexec/PlistBuddy -c \"Delete :NSBonjourServices\" \"$PLIST_PATH\" 2>/dev/null || true\n      fi\n    fi\n\n    # Only delete the description if it matches the dev-launcher default text\n    DESC=$(/usr/libexec/PlistBuddy -c \"Print :NSLocalNetworkUsageDescription\" \"$PLIST_PATH\" 2>/dev/null || echo \"\")\n    if echo \"$DESC\" | grep -q \"Expo Dev Launcher\"; then\n      /usr/libexec/PlistBuddy -c \"Delete :NSLocalNetworkUsageDescription\" \"$PLIST_PATH\" 2>/dev/null || true\n    fi\n  fi\nfi\n";
+		};
+		800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-OpenBot/Pods-OpenBot-resources.sh",
+				"${PODS_CONFIGURATION_BUILD_DIR}/EASClient/EASClient_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/EXConstants.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/EXConstants/ExpoConstants_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/EXUpdates/EXUpdates.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoApplication/ExpoApplication_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoDevice/ExpoDevice_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoFileSystem/ExpoFileSystem_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoLocalization/ExpoLocalization_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoMediaLibrary/ExpoMediaLibrary_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoNotifications/ExpoNotifications_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoSystemUI/ExpoSystemUI_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/ExpoWidgets/ExpoWidgets.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/RNSVG/RNSVGFilters.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/ReachabilitySwift/ReachabilitySwift.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/React-cxxreact/React-cxxreact_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/React-timing/React-timing_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/expo-dev-launcher/EXDevLauncher.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/expo-dev-menu/EXDevMenu.bundle",
+			);
+			name = "[CP] Copy Pods Resources";
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/EASClient_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/EXConstants.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoConstants_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/EXUpdates.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoApplication_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoDevice_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoFileSystem_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoLocalization_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoMediaLibrary_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoNotifications_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoSystemUI_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ExpoWidgets.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/RNSVGFilters.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ReachabilitySwift.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-cxxreact_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-timing_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/EXDevLauncher.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/EXDevMenu.bundle",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-OpenBot/Pods-OpenBot-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		96200964126D9A46761488D9 /* [Expo] Configure project */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/.xcode.env",
+				"$(SRCROOT)/.xcode.env.local",
+				"$(SRCROOT)/ExpoWidgetsTarget/ExpoWidgetsTarget.entitlements",
+				"$(SRCROOT)/Pods/Target Support Files/Pods-ExpoWidgetsTarget/expo-configure-project.sh",
+			);
+			name = "[Expo] Configure project";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/Pods/Target Support Files/Pods-ExpoWidgetsTarget/ExpoModulesProvider.swift",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-ExpoWidgetsTarget/expo-configure-project.sh\"\n";
+		};
+		D00EE0CF48EAEA032E314F01 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-ExpoWidgetsTarget-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		13B07F871A680F5B00A75B9A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
+				F11748442D0307B40044C1D9 /* SceneDelegate.swift in Sources */,
+				633F3F82480240D1929C2151 /* ShortcutData.swift in Sources */,
+				B9941F57416E4D35AD6A96AE /* ShortcutIntents.swift in Sources */,
+				A211203386ED494EB397B604 /* ShortcutSend.swift in Sources */,
+				4A6EA002145C43B6AAEDD892 /* ShortcutSnippets.swift in Sources */,
+				4BE3D01612A24884A757EB8A /* ShareSender.swift in Sources */,
+				000D3BFA8BA4DAD60565111F /* ExpoModulesProvider.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9B29D0BECBF24CFA8EB3C275 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				93F9D576406C414EA257A6CF /* index.swift in Sources */,
+				4B1F12433811FACDC8239FC3 /* ExpoModulesProvider.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B73A7BB90F7148EABD008332 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6DE5ADBEAB3F48FABC716DC1 /* ShareIntoViewController.swift in Sources */,
+				1A56A3C4B4D0492987B8342C /* Constants.swift in Sources */,
+				D737406C65C5467E82EFC372 /* ShareProtocol.swift in Sources */,
+				56A5826DC23449C3B937D222 /* ShareExtensionData.swift in Sources */,
+				B53E34D21945414380BB8D41 /* ShareInput.swift in Sources */,
+				93017BCE695441AF92A563E5 /* ShareSender.swift in Sources */,
+				311B7660CF6F4FDA96CCE443 /* ShareView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F84E4B461F0F4130A2D9DD48 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				96DC4E204AA2426793CC75CE /* NotificationService.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		7E2F6613A6A8492AB7E38ED7 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 42D61DB44484469C90BB96F9 /* OpenBotNotificationService */;
+			targetProxy = 9E5C99B74DEF48E8A0CDE4BC /* PBXContainerItemProxy */;
+		};
+		8128E399F1034EEE85BFE43A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = BAD24DCC0F8D42E299B833B9 /* ExpoWidgetsTarget */;
+			targetProxy = 9420929EB7EB4D9A98269A09 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		01A01B8F74F4476D875BBD6E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = OpenBotNotificationService/OpenBotNotificationService.entitlements;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = QFNEHUV3DG;
+				INFOPLIST_FILE = "OpenBotNotificationService/OpenBotNotificationService-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.4.10;
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
+				PRODUCT_BUNDLE_IDENTIFIER = com.finefine.openbot.NotificationService;
+				PRODUCT_NAME = OpenBotNotificationService;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		13B07F941A680F5B00A75B9A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7F2BF4BA3D38BB54415BC98F /* Pods-OpenBot.debug.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIconRose AppIconTerracotta AppIconGold AppIconGreen AppIconBlue AppIconPink AppIconBeige AppIconGray AppIconWhite";
+				ASSETCATALOG_COMPILER_APPICON_NAME = "app-icon";
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = OpenBot/OpenBot.entitlements;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = QFNEHUV3DG;
+				ENABLE_BITCODE = NO;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"FB_SONARKIT_ENABLED=1",
+				);
+				INFOPLIST_FILE = OpenBot/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.4;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+					"-lc++",
+				);
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
+				PRODUCT_BUNDLE_IDENTIFIER = com.finefine.openbot;
+				PRODUCT_NAME = OpenBot;
+				SWIFT_OBJC_BRIDGING_HEADER = "OpenBot/OpenBot-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Debug;
+		};
+		13B07F951A680F5B00A75B9A /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 81332F295B67B9B2572BC7C5 /* Pods-OpenBot.release.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIconRose AppIconTerracotta AppIconGold AppIconGreen AppIconBlue AppIconPink AppIconBeige AppIconGray AppIconWhite";
+				ASSETCATALOG_COMPILER_APPICON_NAME = "app-icon";
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = OpenBot/OpenBot.entitlements;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = QFNEHUV3DG;
+				ENABLE_BITCODE = NO;
+				INFOPLIST_FILE = OpenBot/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.4;
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+					"-lc++",
+				);
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
+				PRODUCT_BUNDLE_IDENTIFIER = com.finefine.openbot;
+				PRODUCT_NAME = OpenBot;
+				SWIFT_OBJC_BRIDGING_HEADER = "OpenBot/OpenBot-Bridging-Header.h";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Release;
+		};
+		26398CDC115E40548A68B9AB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = "expo-sharing-extension/expo-sharing-extension.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = QFNEHUV3DG;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "expo-sharing-extension/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "expo-sharing-extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.4.10;
+				MTL_FAST_MATH = YES;
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
+				PRODUCT_BUNDLE_IDENTIFIER = com.finefine.openbot.ShareExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		491EF1EE5F6B40CFACF731C6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CODE_SIGN_ENTITLEMENTS = "expo-sharing-extension/expo-sharing-extension.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = QFNEHUV3DG;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "expo-sharing-extension/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "expo-sharing-extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.4.10;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
+				PRODUCT_BUNDLE_IDENTIFIER = com.finefine.openbot.ShareExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		82560BCDC3B149EF9298F5BD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = OpenBotNotificationService/OpenBotNotificationService.entitlements;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = QFNEHUV3DG;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				INFOPLIST_FILE = "OpenBotNotificationService/OpenBotNotificationService-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.4.10;
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
+				PRODUCT_BUNDLE_IDENTIFIER = com.finefine.openbot.NotificationService;
+				PRODUCT_NAME = OpenBotNotificationService;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		83CBBA201A601CBA00E9B192 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				ENABLE_BITCODE = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					/usr/lib/swift,
+					"$(inherited)",
+				);
+				LIBRARY_SEARCH_PATHS = "$(SDKROOT)/usr/lib/swift\"$(inherited)\"";
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				OTHER_CFLAGS = (
+					"$(inherited)",
+					"-DRCT_REMOVE_LEGACY_ARCH=1",
+				);
+				OTHER_CPLUSPLUSFLAGS = (
+					"$(inherited)",
+					"-DRCT_REMOVE_LEGACY_ARCH=1",
+				);
+				PODFILE_DIR = "$(SRCROOT)";
+				REACT_NATIVE_PATH = "${PODS_ROOT}/../../../../node_modules/react-native";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
+				USE_HERMES = true;
+			};
+			name = Debug;
+		};
+		83CBBA211A601CBA00E9B192 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				ENABLE_BITCODE = NO;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					/usr/lib/swift,
+					"$(inherited)",
+				);
+				LIBRARY_SEARCH_PATHS = "$(SDKROOT)/usr/lib/swift\"$(inherited)\"";
+				MTL_ENABLE_DEBUG_INFO = NO;
+				OTHER_CFLAGS = (
+					"$(inherited)",
+					"-DRCT_REMOVE_LEGACY_ARCH=1",
+				);
+				OTHER_CPLUSPLUSFLAGS = (
+					"$(inherited)",
+					"-DRCT_REMOVE_LEGACY_ARCH=1",
+				);
+				PODFILE_DIR = "$(SRCROOT)";
+				REACT_NATIVE_PATH = "${PODS_ROOT}/../../../../node_modules/react-native";
+				SDKROOT = iphoneos;
+				USE_HERMES = true;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		A17A3D9D359449BE94B190D0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = E23D50836F67B6F01ED1137F /* Pods-ExpoWidgetsTarget.release.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = ExpoWidgetsTarget/ExpoWidgetsTarget.entitlements;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = QFNEHUV3DG;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ExpoWidgetsTarget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = ExpoWidgetsTarget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				MARKETING_VERSION = 1.4.10;
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
+				PRODUCT_BUNDLE_IDENTIFIER = com.finefine.openbot.ExpoWidgetsTarget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		AD64407BFF26460C8CCBCFCD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 85237B19DACEC5C8E572C7D6 /* Pods-ExpoWidgetsTarget.debug.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = ExpoWidgetsTarget/ExpoWidgetsTarget.entitlements;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = QFNEHUV3DG;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ExpoWidgetsTarget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = ExpoWidgetsTarget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				MARKETING_VERSION = 1.4.10;
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
+				PRODUCT_BUNDLE_IDENTIFIER = com.finefine.openbot.ExpoWidgetsTarget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		00F44230BD0E4655B453AC9F /* Build configuration list for PBXNativeTarget "OpenBotNotificationService" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				82560BCDC3B149EF9298F5BD /* Debug */,
+				01A01B8F74F4476D875BBD6E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		09B6A9A480AC4E29ACAF57FB /* Build configuration list for PBXNativeTarget "ExpoWidgetsTarget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AD64407BFF26460C8CCBCFCD /* Debug */,
+				A17A3D9D359449BE94B190D0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "OpenBot" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				13B07F941A680F5B00A75B9A /* Debug */,
+				13B07F951A680F5B00A75B9A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		6624B94E95334658B923A3B1 /* Build configuration list for PBXNativeTarget "expo-sharing-extension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				491EF1EE5F6B40CFACF731C6 /* Debug */,
+				26398CDC115E40548A68B9AB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "OpenBot" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				83CBBA201A601CBA00E9B192 /* Debug */,
+				83CBBA211A601CBA00E9B192 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 83CBB9F71A601CBA00E9B192 /* Project object */;
+}
