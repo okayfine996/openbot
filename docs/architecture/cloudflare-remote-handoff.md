@@ -16,7 +16,8 @@ created or deployed by this work.
 The target is a single-owner personal remote setup; it does not require Discord or multi-user Team:
 
 1. Auth Worker + D1 keep users, devices, host registration, memberships, invitations and sessions.
-2. Signal Worker + one Durable Object validate tickets, pair Team clients, relay SDP/ICE and issue
+2. Signal Worker + one Durable Object validate tickets, pair the personal mobile client with its host,
+   relay SDP/ICE and issue
    bounded Cloudflare Realtime TURN credentials.
 3. Existing host data channels remain unchanged. Multi-user Team API behavior is optional and is not
    part of the personal acceptance gate.

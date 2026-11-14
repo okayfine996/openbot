@@ -4,8 +4,8 @@ This Worker is the Cloudflare Durable Objects implementation of the OpenBot pers
 
 It keeps the released Signal frame contract. A single `SignalRoom` object currently owns host and
 client sockets, ingress webhook sockets, SDP/ICE relay, resume tokens, ticket replay records and
-Cloudflare Realtime TURN credential refresh. Team data still stays on the WebRTC `rpc`, `events`,
-`files` and `desktop` channels.
+Cloudflare Realtime TURN credential refresh. Host data still stays on the existing WebRTC channels;
+multi-user Team data is not required by the personal path.
 
 `POST /v1/webhooks/:routeId` forwards the exact body and signed headers to the host. The host remains
 the trust boundary for webhook HMAC verification. The Worker stores neither the body nor the headers.

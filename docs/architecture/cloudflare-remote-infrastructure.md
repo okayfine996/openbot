@@ -98,7 +98,7 @@ explicit operator action after phase exit conditions are met.
 - Wrangler validation and dry-run succeed without creating a Worker, DO namespace, D1 database, TURN
   key, DNS record, or custom domain.
 - Production has quota alarms, egress monitoring, and a rollback switch to Bun.
-- TURN is an ICE fallback. SFU is not required for the current one-host/one-client Team path; any
+- TURN is an ICE fallback. SFU is not required for the current one-host/one-client personal path; any
   future SFU use needs a separate cost and capacity review.
 
 ## Verification matrix
