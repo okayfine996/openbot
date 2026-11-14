@@ -18,7 +18,7 @@ type Peer = {
   resumeToken: string;
   connectionId: string | null;
   multiplex: boolean;
-  webhookRoutes: Set<string>;
+  webhookRoutes: Map<string, number>;
   webhookFormats: Set<WebhookSignatureFormat>;
   messageWindow: { startedAt: number; count: number };
 };
@@ -73,7 +73,7 @@ export class SignalRoom {
   readonly #auth: SignalAuthenticator;
   readonly #peers = new Map<WebSocket, Peer>();
   readonly #hosts = new Map<string, Set<Peer>>();
-  readonly #webhookRoutes = new Map<string, Peer>();
+  readonly #webhookRoutes = new Map<string, { peer: Peer; linkedAt: number }>();
   readonly #connections = new Map<string, Connection>();
   readonly #pendingWebhooks = new Map<string, { peer: Peer; resolve: (status: number) => void }>();
   readonly #helloTimers = new Map<WebSocket, ReturnType<typeof setTimeout>>();
@@ -137,11 +137,20 @@ export class SignalRoom {
       }
       return true;
     }
+    if (event.type === "webhook-route-revoked") {
+      const route = this.#webhookRoutes.get(event.routeId);
+      if (route && route.linkedAt <= event.through) {
+        const peer = route.peer;
+        peer.webhookRoutes.delete(event.routeId);
+        this.#webhookRoutes.delete(event.routeId);
+      }
+      return true;
+    }
     return false;
   }
 
   async #deliverWebhook(delivery: WebhookDelivery): Promise<number> {
-    const peer = this.#webhookRoutes.get(delivery.routeId);
+    const peer = this.#webhookRoutes.get(delivery.routeId)?.peer;
     if (!peer || peer.socket.readyState !== WebSocket.OPEN) return 503;
     const response = new Promise<number>((resolve) => {
       this.#pendingWebhooks.set(delivery.requestId, { peer, resolve });
@@ -227,7 +236,7 @@ export class SignalRoom {
       resumeToken,
       connectionId: null,
       multiplex: hello.peer === "host" && hello.multiplex === true,
-      webhookRoutes: new Set(),
+      webhookRoutes: new Map(),
       webhookFormats: new Set(
         hello.webhookFormats?.filter((format): format is WebhookSignatureFormat => format === "standard-webhooks"),
       ),
@@ -280,10 +289,15 @@ export class SignalRoom {
     if (routePayload.hid !== peer.claims.hostId || !Array.isArray(routePayload.routes))
       return this.#fail(peer.socket, "permission_denied", "The webhook route belongs to another host.", 1008);
     for (const route of routePayload.routes) {
-      if (!isRecord(route) || typeof route.id !== "string" || !WEBHOOK_ROUTE_ID_PATTERN.test(route.id))
+      if (
+        !isRecord(route) ||
+        typeof route.id !== "string" ||
+        !WEBHOOK_ROUTE_ID_PATTERN.test(route.id) ||
+        typeof route.linkedAt !== "number"
+      )
         return this.#fail(peer.socket, "authentication_required", "The webhook route is invalid.", 1008);
-      peer.webhookRoutes.add(route.id);
-      this.#webhookRoutes.set(route.id, peer);
+      peer.webhookRoutes.set(route.id, route.linkedAt);
+      this.#webhookRoutes.set(route.id, { peer, linkedAt: route.linkedAt });
     }
     this.#send(peer.socket, await this.#ready(peer, null));
     this.#send(peer.socket, { type: "webhook-ready", version: SIGNAL_PROTOCOL_VERSION });
@@ -376,8 +390,8 @@ export class SignalRoom {
       hosts?.delete(peer);
       if (hosts?.size === 0) this.#hosts.delete(peer.claims.hostId);
     }
-    for (const routeId of peer.webhookRoutes) {
-      if (this.#webhookRoutes.get(routeId) === peer) this.#webhookRoutes.delete(routeId);
+    for (const routeId of peer.webhookRoutes.keys()) {
+      if (this.#webhookRoutes.get(routeId)?.peer === peer) this.#webhookRoutes.delete(routeId);
     }
     for (const [requestId, pending] of this.#pendingWebhooks) {
       if (pending.peer === peer) {
