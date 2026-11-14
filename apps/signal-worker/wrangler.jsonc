@@ -1,34 +1,23 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "openbot-signal-worker",
+  "name": "openbot-personal-signal-20261115",
   "main": "src/index.ts",
   "compatibility_date": "2026-08-18",
-  "workers_dev": false,
-  "preview_urls": false,
+  "workers_dev": true,
+  "preview_urls": true,
   "observability": { "enabled": false },
   "durable_objects": {
     "bindings": [{ "name": "SIGNAL_ROOM", "class_name": "SignalRoom" }]
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["SignalRoom"] }],
-  "routes": [{ "pattern": "signal-worker.openbot.run", "custom_domain": true }],
+  "routes": [],
   "vars": {
-    "REMOTE_TICKET_JWKS_URL": "https://api.openbot.run/.well-known/jwks.json",
-    "TURN_PROVIDER": "cloudflare-realtime",
-    "REMOTE_CONTROL_PLANE_URL": "https://api.openbot.run"
+    "REMOTE_TICKET_JWKS_URL": "https://openbot-personal-auth-20261115.tianrandailoving.workers.dev/.well-known/jwks.json",
+    "TURN_PROVIDER": "disabled",
+    "REMOTE_CONTROL_PLANE_URL": "https://openbot-personal-auth-20261115.tianrandailoving.workers.dev"
   },
   "secrets": {
-    "required": [
-      "REMOTE_SESSION_SECRET",
-      "REMOTE_AUTH_WEBHOOK_SECRET",
-      "SLACK_SIGNING_SECRET",
-      "GITHUB_WEBHOOK_SECRET",
-      "TELEGRAM_BOT_TOKENS",
-      "TELEGRAM_WEBHOOK_SECRET",
-      "DISCORD_BOT_TOKEN",
-      "DISCORD_APPLICATION_ID",
-      "CLOUDFLARE_TURN_KEY_ID",
-      "CLOUDFLARE_TURN_API_TOKEN"
-    ]
+    "required": ["REMOTE_SESSION_SECRET", "REMOTE_AUTH_WEBHOOK_SECRET"]
   },
   "env": {
     "preview": {

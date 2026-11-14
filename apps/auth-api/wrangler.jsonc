@@ -1,11 +1,11 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "openbot-auth-api",
+  "name": "openbot-personal-auth-20261115",
   "compatibility_date": "2026-08-18",
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/worker-entry.ts",
-  "workers_dev": false,
-  "preview_urls": false,
+  "workers_dev": true,
+  "preview_urls": true,
   "cache": {
     "enabled": true,
     "cross_version_cache": false
@@ -25,21 +25,7 @@
     // The second cron runs only the Signal entry check (`signal-entry-failover.ts`), each minute.
     "crons": ["*/5 * * * *", "*/1 * * * *"]
   },
-  "routes": [
-    {
-      "pattern": "openbot.run/*",
-      "zone_id": "bac5e044ba951c390229f0e93673ebd3"
-    },
-    // `www` has no origin. The Worker answers it only with a redirect to openbot.run.
-    {
-      "pattern": "www.openbot.run/*",
-      "zone_id": "bac5e044ba951c390229f0e93673ebd3"
-    },
-    {
-      "pattern": "api.openbot.run",
-      "custom_domain": true
-    }
-  ],
+  "routes": [],
   "secrets": {
     "required": [
       "EMAIL_SMTP_PASSWORD",
@@ -58,9 +44,9 @@
     "EMAIL_FROM": "hello@openbot.run",
     "EMAIL_LICENSE_FROM": "licenses@openbot.run",
     "REMOTE_TICKET_KEY_ID": "openbot-remote-1",
-    "REMOTE_SIGNAL_URL": "wss://signal.openbot.run/v1/signal",
+    "REMOTE_SIGNAL_URL": "wss://openbot-personal-signal-20261115.tianrandailoving.workers.dev/v1/signal",
     // Optional Cloudflare Durable Objects Signal for Team WebRTC.
-    "REMOTE_SIGNAL_WORKER_URL": "",
+    "REMOTE_SIGNAL_WORKER_URL": "wss://openbot-personal-signal-20261115.tianrandailoving.workers.dev/v1/signal",
     "REMOTE_SIGNAL_INGRESS_WORKER_URL": "",
     // Active Signal machines (docs/remote-session-deployment.md): a is sui-alexandria and b is signal2,
     // both in Helsinki; us is in San Jose (Leaseweb SFO-12) and au in Sydney (Leaseweb SYD-12). Keep a
@@ -90,43 +76,31 @@
   // Email leaves through the relay Worker (`wrangler.email-relay.jsonc`), which runs near the mail
   // host. Only production has it: the preview and test Workers and `vite dev` send from their own
   // socket. Deploy the relay before this Worker.
-  "services": [
-    {
-      "binding": "EMAIL_RELAY",
-      "service": "openbot-email-relay"
-    }
-  ],
   // Cloudflare Email Service sends when the SMTP mailbox surely did not, such as when its hourly limit
   // (500 messages) is spent. The senders must be on an onboarded Email Sending domain (openbot.run).
   // Only production has it: the preview and test Workers keep SMTP only.
-  "send_email": [
-    {
-      "name": "EMAIL_FALLBACK",
-      "allowed_sender_addresses": ["hello@openbot.run", "licenses@openbot.run"]
-    }
-  ],
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "openbot-auth",
-      "database_id": "0cf7e5c1-63ad-4089-810a-e9eb67dd863d",
+      "database_name": "openbot-personal-auth-20261115",
+      "database_id": "2c75b14d-1c52-44b7-8f64-bce2c63b51c2",
       "migrations_dir": "migrations"
     }
   ],
   "r2_buckets": [
     {
       "binding": "AVATARS",
-      "bucket_name": "openbot-avatars",
+      "bucket_name": "openbot-personal-avatars-20261115",
       "preview_bucket_name": "openbot-avatars-test"
     },
     {
       "binding": "SKILLS",
-      "bucket_name": "openbot-skills",
+      "bucket_name": "openbot-personal-skills-20261115",
       "preview_bucket_name": "openbot-skills-test"
     },
     {
       "binding": "SITES",
-      "bucket_name": "openbot-sites",
+      "bucket_name": "openbot-personal-sites-20261115",
       "preview_bucket_name": "openbot-sites-test"
     }
   ],
