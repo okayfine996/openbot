@@ -36,6 +36,7 @@ export class SignalAuthenticator {
       if ((revokedEpoch !== undefined && ticket.authEpoch <= revokedEpoch) || revokedSession !== undefined)
         throw new SignalAuthError("session revoked");
       await state.storage.put(`ticket:${ticket.jti}`, ticket.exp);
+      await state.storage.setAlarm(Date.now() + 60_000);
       return { claims: ticket, resumed: false };
     } catch (error) {
       if (ticket !== null) throw error;

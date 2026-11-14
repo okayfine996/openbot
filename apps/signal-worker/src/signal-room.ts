@@ -107,6 +107,16 @@ export class SignalRoom {
     return false;
   }
 
+  async alarm(): Promise<void> {
+    const now = Math.floor(Date.now() / 1_000);
+    const tickets = await this.#state.storage.list<number>({ prefix: "ticket:" });
+    for (const [key, expiresAt] of tickets) {
+      if (expiresAt <= now) await this.#state.storage.delete(key);
+    }
+    const remaining = await this.#state.storage.list<number>({ prefix: "ticket:", limit: 1 });
+    if (remaining.size > 0) await this.#state.storage.setAlarm(Date.now() + 60_000);
+  }
+
   #registerSocket(socket: WebSocket): void {
     const timer = setTimeout(() => this.#fail(socket, "authentication_required", "Hello required.", 1008), 30_000);
     this.#helloTimers.set(socket, timer);
