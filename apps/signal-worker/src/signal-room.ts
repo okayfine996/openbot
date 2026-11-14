@@ -3,6 +3,12 @@ import { GITHUB_ROUTE_AUDIENCE } from "@openbot/contracts/signal-protocol/github
 import type { IceServer, SignalChannel, SignalProtocolVersion } from "@openbot/contracts/signal-protocol/messages";
 import { SIGNAL_MESSAGE_BYTES_LIMIT, SIGNAL_PROTOCOL_VERSION } from "@openbot/contracts/signal-protocol/messages";
 import { SLACK_ROUTE_AUDIENCE } from "@openbot/contracts/signal-protocol/slack-route";
+import {
+  TELEGRAM_BOT_ID_PATTERN,
+  TELEGRAM_CHAT_ID_PATTERN,
+  TELEGRAM_ROUTE_AUDIENCE,
+  type TelegramCallMethod,
+} from "@openbot/contracts/signal-protocol/telegram-route";
 import type { RemoteTicketClaims } from "@openbot/contracts/signal-protocol/ticket";
 import type { WebhookSignatureFormat } from "@openbot/contracts/signal-protocol/webhook-route";
 import { WEBHOOK_ROUTE_AUDIENCE, WEBHOOK_ROUTE_ID_PATTERN } from "@openbot/contracts/signal-protocol/webhook-route";
@@ -23,6 +29,7 @@ type Peer = {
   webhookRoutes: Map<string, number>;
   slackRoutes: Map<string, number>;
   githubRepositories: Set<string>;
+  telegramRoutes: Set<string>;
   webhookFormats: Set<WebhookSignatureFormat>;
   messageWindow: { startedAt: number; count: number };
 };
@@ -45,6 +52,7 @@ type Hello = {
   webhookRoute?: string;
   slackRoute?: string;
   githubRoute?: string;
+  telegramRoute?: string;
   webhookFormats?: string[];
 };
 type Relay = {
@@ -88,6 +96,24 @@ type GitHubDelivery = {
   repositoryKey: string;
   bodyBase64: string;
 };
+type TelegramDelivery = { botId: string; chatId: string; bodyBase64: string; linked?: true };
+type TelegramCall = {
+  type: "telegram-call";
+  version: 1;
+  requestId: string;
+  botId: string;
+  method: TelegramCallMethod;
+  params: object;
+};
+const TELEGRAM_METHODS = new Set<TelegramCallMethod>([
+  "getMe",
+  "sendMessage",
+  "editMessageText",
+  "deleteMessage",
+  "setMessageReaction",
+  "answerCallbackQuery",
+  "leaveChat",
+]);
 
 export class SignalRoom {
   readonly #state: DurableObjectState;
@@ -98,6 +124,7 @@ export class SignalRoom {
   readonly #webhookRoutes = new Map<string, { peer: Peer; linkedAt: number }>();
   readonly #slackRoutes = new Map<string, { peer: Peer; linkedAt: number }>();
   readonly #githubRepositories = new Map<string, Set<Peer>>();
+  readonly #telegramRoutes = new Map<string, Peer>();
   readonly #connections = new Map<string, Connection>();
   readonly #pendingWebhooks = new Map<string, { peer: Peer; resolve: (status: number) => void }>();
   readonly #pendingDeliveries = new Map<string, { peer: Peer; resolve: (status: number) => void }>();
@@ -141,6 +168,11 @@ export class SignalRoom {
       const value = await request.json();
       if (!isGitHubDelivery(value)) return Response.json({ error: { code: "invalid_delivery" } }, { status: 400 });
       return new Response(null, { status: await this.#deliverGitHub(value) });
+    }
+    if (path === "/internal/telegram-delivery" && request.method === "POST") {
+      const value = await request.json();
+      if (!isTelegramDelivery(value)) return Response.json({ error: { code: "invalid_delivery" } }, { status: 400 });
+      return new Response(null, { status: this.#deliverTelegram(value) });
     }
     if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket")
       return new Response("WebSocket upgrade required.", { status: 426 });
@@ -187,6 +219,15 @@ export class SignalRoom {
       if (route && route.linkedAt <= event.through) {
         route.peer.slackRoutes.delete(key);
         this.#slackRoutes.delete(key);
+      }
+      return true;
+    }
+    if (event.type === "telegram-route-revoked") {
+      const key = `${event.botId}:${event.chatId}`;
+      const peer = this.#telegramRoutes.get(key);
+      if (peer) {
+        peer.telegramRoutes.delete(key);
+        this.#telegramRoutes.delete(key);
       }
       return true;
     }
@@ -248,6 +289,97 @@ export class SignalRoom {
     return statuses.every((status) => status === 404) ? 204 : 503;
   }
 
+  #deliverTelegram(delivery: TelegramDelivery): number {
+    const peer = this.#telegramRoutes.get(`${delivery.botId}:${delivery.chatId}`);
+    if (!peer || peer.socket.readyState !== WebSocket.OPEN) return 200;
+    this.#send(peer.socket, {
+      type: "telegram-delivery",
+      version: SIGNAL_PROTOCOL_VERSION,
+      botId: delivery.botId,
+      chatId: delivery.chatId,
+      bodyBase64: delivery.bodyBase64,
+      ...(delivery.linked ? { linked: true } : {}),
+    });
+    return 204;
+  }
+
+  async #telegramCall(peer: Peer, call: TelegramCall): Promise<void> {
+    const chatId = telegramCallChatId(call);
+    if (call.method !== "getMe" && (chatId === null || this.#telegramRoutes.get(`${call.botId}:${chatId}`) !== peer)) {
+      this.#send(peer.socket, {
+        type: "telegram-call-result",
+        version: SIGNAL_PROTOCOL_VERSION,
+        requestId: call.requestId,
+        ok: false,
+        status: 403,
+        code: "forbidden",
+        message: "The Telegram route is not owned by this host.",
+      });
+      return;
+    }
+    const token = this.#telegramTokens().get(call.botId);
+    if (!token || !TELEGRAM_METHODS.has(call.method)) {
+      this.#send(peer.socket, {
+        type: "telegram-call-result",
+        version: SIGNAL_PROTOCOL_VERSION,
+        requestId: call.requestId,
+        ok: false,
+        status: 503,
+        code: "unavailable",
+        message: "Telegram is not configured.",
+      });
+      return;
+    }
+    try {
+      const response = await fetch(`https://api.telegram.org/bot${token}/${call.method}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(call.params),
+      });
+      const value = await response.json();
+      const result = isRecord(value) && value.ok === true ? telegramCallResult(call.method, value.result) : null;
+      if (result === null) {
+        this.#send(peer.socket, {
+          type: "telegram-call-result",
+          version: SIGNAL_PROTOCOL_VERSION,
+          requestId: call.requestId,
+          ok: false,
+          status: response.status,
+          code: "telegram_error",
+          message: "The Telegram API rejected the call.",
+        });
+        return;
+      }
+      this.#send(peer.socket, {
+        type: "telegram-call-result",
+        version: SIGNAL_PROTOCOL_VERSION,
+        requestId: call.requestId,
+        ok: true,
+        result,
+      });
+    } catch {
+      this.#send(peer.socket, {
+        type: "telegram-call-result",
+        version: SIGNAL_PROTOCOL_VERSION,
+        requestId: call.requestId,
+        ok: false,
+        status: 502,
+        code: "unavailable",
+        message: "The Telegram API did not answer.",
+      });
+    }
+  }
+
+  #telegramTokens(): Map<string, string> {
+    const tokens = new Map<string, string>();
+    for (const value of (this.#env.TELEGRAM_BOT_TOKENS ?? "").split(",")) {
+      const separator = value.indexOf(":");
+      const botId = value.slice(0, separator);
+      if (separator > 0 && TELEGRAM_BOT_ID_PATTERN.test(botId)) tokens.set(botId, value.slice(separator + 1));
+    }
+    return tokens;
+  }
+
   async #waitForDelivery(peer: Peer, requestId: string, frame: unknown): Promise<number> {
     if (peer.socket.readyState !== WebSocket.OPEN) return 503;
     const response = new Promise<number>((resolve) => this.#pendingDeliveries.set(requestId, { peer, resolve }));
@@ -304,6 +436,7 @@ export class SignalRoom {
       if (pending?.peer === peer) pending.resolve(message.status);
       return;
     }
+    if (isTelegramCall(message)) return this.#telegramCall(peer, message);
     if (isRelay(message)) return this.#relay(peer, message);
     return this.#fail(socket, "invalid_message", "Unsupported message.", 1008);
   }
@@ -333,6 +466,7 @@ export class SignalRoom {
       webhookRoutes: new Map(),
       slackRoutes: new Map(),
       githubRepositories: new Set(),
+      telegramRoutes: new Set(),
       webhookFormats: new Set(
         hello.webhookFormats?.filter((format): format is WebhookSignatureFormat => format === "standard-webhooks"),
       ),
@@ -380,7 +514,7 @@ export class SignalRoom {
   }
 
   async #admitIngress(peer: Peer, hello: Hello): Promise<void> {
-    if (!hello.webhookRoute && !hello.slackRoute && !hello.githubRoute)
+    if (!hello.webhookRoute && !hello.slackRoute && !hello.githubRoute && !hello.telegramRoute)
       return this.#fail(peer.socket, "permission_denied", "An ingress route is required.", 1008);
     if (hello.webhookRoute) {
       const routePayload = await this.#auth.verifyRoute(hello.webhookRoute, WEBHOOK_ROUTE_AUDIENCE);
@@ -427,6 +561,25 @@ export class SignalRoom {
         const peers = this.#githubRepositories.get(key) ?? new Set<Peer>();
         peers.add(peer);
         this.#githubRepositories.set(key, peers);
+      }
+    }
+    if (hello.telegramRoute) {
+      const routePayload = await this.#auth.verifyRoute(hello.telegramRoute, TELEGRAM_ROUTE_AUDIENCE);
+      if (routePayload.hid !== peer.claims.hostId || !Array.isArray(routePayload.chats))
+        return this.#fail(peer.socket, "permission_denied", "The Telegram route belongs to another host.", 1008);
+      for (const chat of routePayload.chats) {
+        if (
+          !isRecord(chat) ||
+          typeof chat.botId !== "string" ||
+          !TELEGRAM_BOT_ID_PATTERN.test(chat.botId) ||
+          typeof chat.id !== "string" ||
+          !TELEGRAM_CHAT_ID_PATTERN.test(chat.id) ||
+          typeof chat.linkedAt !== "number"
+        )
+          return this.#fail(peer.socket, "authentication_required", "The Telegram route is invalid.", 1008);
+        const key = `${chat.botId}:${chat.id}`;
+        peer.telegramRoutes.add(key);
+        this.#telegramRoutes.set(key, peer);
       }
     }
     this.#send(peer.socket, await this.#ready(peer, null));
@@ -483,6 +636,7 @@ export class SignalRoom {
       connectionId,
       resumeToken: peer.resumeToken,
       iceServers: await this.#getIceServers(peer.claims.sessionId, peer.claims.sessionExpiresAt),
+      ...(this.#telegramTokens().size > 0 ? { capabilities: ["telegram"] } : {}),
     };
   }
 
@@ -531,6 +685,9 @@ export class SignalRoom {
       const peers = this.#githubRepositories.get(route);
       peers?.delete(peer);
       if (peers?.size === 0) this.#githubRepositories.delete(route);
+    }
+    for (const route of peer.telegramRoutes) {
+      if (this.#telegramRoutes.get(route) === peer) this.#telegramRoutes.delete(route);
     }
     for (const [requestId, pending] of this.#pendingWebhooks) {
       if (pending.peer === peer) {
@@ -608,6 +765,7 @@ function isHello(value: unknown): value is Hello {
     (value.webhookRoute === undefined || typeof value.webhookRoute === "string") &&
     (value.slackRoute === undefined || typeof value.slackRoute === "string") &&
     (value.githubRoute === undefined || typeof value.githubRoute === "string") &&
+    (value.telegramRoute === undefined || typeof value.telegramRoute === "string") &&
     (value.webhookFormats === undefined ||
       (Array.isArray(value.webhookFormats) && value.webhookFormats.every((format) => typeof format === "string")))
   );
@@ -652,6 +810,64 @@ function isGitHubResult(value: unknown): value is { requestId: string; status: n
     value.type === "github-delivery-result" &&
     typeof value.requestId === "string" &&
     typeof value.status === "number"
+  );
+}
+
+function isTelegramCall(value: unknown): value is TelegramCall {
+  return (
+    isRecord(value) &&
+    value.type === "telegram-call" &&
+    value.version === SIGNAL_PROTOCOL_VERSION &&
+    typeof value.requestId === "string" &&
+    typeof value.botId === "string" &&
+    isTelegramCallMethod(value.method) &&
+    isRecord(value.params)
+  );
+}
+
+function isTelegramDelivery(value: unknown): value is TelegramDelivery {
+  return (
+    isRecord(value) &&
+    typeof value.botId === "string" &&
+    typeof value.chatId === "string" &&
+    TELEGRAM_CHAT_ID_PATTERN.test(value.chatId) &&
+    typeof value.bodyBase64 === "string" &&
+    (value.linked === undefined || value.linked === true)
+  );
+}
+
+function telegramCallChatId(call: TelegramCall): string | null {
+  if (call.method === "getMe") return "-0";
+  if (call.method === "answerCallbackQuery") return null;
+  if (!isRecord(call.params)) return null;
+  const chatId = call.params.chat_id;
+  return typeof chatId === "number" && Number.isSafeInteger(chatId) ? String(chatId) : null;
+}
+
+function telegramCallResult(method: TelegramCallMethod, value: unknown): TelegramResult | null {
+  if (method === "getMe" && isRecord(value) && typeof value.id === "number" && typeof value.username === "string")
+    return { botId: String(value.id), username: value.username };
+  if (method === "sendMessage" && isRecord(value) && typeof value.message_id === "number")
+    return { messageId: value.message_id };
+  if (isRecord(value) || value === true) return {};
+  return null;
+}
+
+interface TelegramResult {
+  messageId?: number;
+  botId?: string;
+  username?: string;
+}
+
+function isTelegramCallMethod(value: unknown): value is TelegramCallMethod {
+  return (
+    value === "getMe" ||
+    value === "sendMessage" ||
+    value === "editMessageText" ||
+    value === "deleteMessage" ||
+    value === "setMessageReaction" ||
+    value === "answerCallbackQuery" ||
+    value === "leaveChat"
   );
 }
 

@@ -45,6 +45,8 @@ claims, resume semantics, route ownership, and protocol frames.
   behavior unchanged.
 - Generic webhook ingress can be forwarded to a Worker-connected host. Signature verification and
   route authorization remain host-side.
+- Slack and GitHub signed ingress, plus Telegram update delivery and a bounded subset of Telegram
+  Bot API calls, can use the Worker when `REMOTE_SIGNAL_INGRESS_WORKER_URL` is configured.
 - Slack, Telegram, Discord, GitHub and sealed queue routing remain on Bun until their adapters and
   compatibility tests are complete.
 
@@ -148,8 +150,8 @@ into chat or commit them:
 3. Auth Worker JWKS URL, `REMOTE_SESSION_SECRET`, and separately generated
    `REMOTE_AUTH_WEBHOOK_SECRET`.
 4. DNS/custom-domain ownership for `signal-worker.openbot.run`, or a replacement hostname.
-5. Deliberate `REMOTE_SIGNAL_WORKER_URL` and the Worker `/internal/auth-events` URL in Auth API
-   webhook fan-out configuration.
+5. Deliberate `REMOTE_SIGNAL_WORKER_URL`, optional `REMOTE_SIGNAL_INGRESS_WORKER_URL`, and the
+   Worker `/internal/auth-events` URL in Auth API webhook fan-out configuration.
 6. Rollback owner and egress/quota alert destination.
 
 Before cutover, confirm current quotas, Realtime allowance, billing boundary, retention/logging

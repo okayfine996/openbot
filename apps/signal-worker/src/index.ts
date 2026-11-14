@@ -10,13 +10,25 @@ import {
   GITHUB_SIGNATURE_PATTERN,
 } from "@openbot/contracts/signal-protocol/github-route";
 import {
+  TELEGRAM_BOT_ID_PATTERN,
+  TELEGRAM_UPDATE_BYTES_LIMIT,
+  TELEGRAM_UPDATES_PATH,
+} from "@openbot/contracts/signal-protocol/telegram-route";
+import {
   STANDARD_WEBHOOK_HEADER_SETS,
   WEBHOOK_DELIVERY_ID_HEADER,
   WEBHOOK_ROUTE_ID_PATTERN,
   WEBHOOK_SIGNATURE_HEADER,
   WEBHOOK_TIMESTAMP_HEADER,
 } from "@openbot/contracts/signal-protocol/webhook-route";
-import { readGitHubRepository, readSlackRequest, verifyGitHubSignature, verifySlackSignature } from "./ingress";
+import {
+  readGitHubRepository,
+  readSlackRequest,
+  readTelegramUpdate,
+  verifyGitHubSignature,
+  verifySlackSignature,
+  verifyTelegramWebhookSecret,
+} from "./ingress";
 import { SignalRoom } from "./signal-room";
 
 export { SignalRoom };
@@ -165,6 +177,32 @@ export default {
             repositoryKey: `${repository.installationId}:${repository.repositoryId}`,
             bodyBase64: encodeBase64(new Uint8Array(body)),
           }),
+        }),
+      );
+    }
+    if (request.method === "POST" && url.pathname.startsWith(`${TELEGRAM_UPDATES_PATH}/`)) {
+      const botId = url.pathname.slice(`${TELEGRAM_UPDATES_PATH}/`.length);
+      if (!TELEGRAM_BOT_ID_PATTERN.test(botId)) return new Response(null, { status: 404 });
+      const body = await request.arrayBuffer();
+      if (body.byteLength > TELEGRAM_UPDATE_BYTES_LIMIT) return new Response(null, { status: 413 });
+      const secret = env.TELEGRAM_WEBHOOK_SECRET ?? "";
+      if (
+        !secret ||
+        !(await verifyTelegramWebhookSecret(
+          request.headers.get("x-telegram-bot-api-secret-token") ?? "",
+          secret,
+          botId,
+        ))
+      )
+        return new Response(null, { status: 401 });
+      const update = readTelegramUpdate(new Uint8Array(body));
+      if (!update) return new Response(null, { status: 200 });
+      const id = env.SIGNAL_ROOM.idFromName("global");
+      return env.SIGNAL_ROOM.get(id).fetch(
+        new Request("https://signal-room.internal/internal/telegram-delivery", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ botId, chatId: update.chatId, bodyBase64: encodeBase64(new Uint8Array(body)) }),
         }),
       );
     }

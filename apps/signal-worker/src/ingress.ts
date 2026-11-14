@@ -1,4 +1,5 @@
 type SlackRequest = { appId: string; teamId: string; kind: "events" | "interactivity"; challenge?: string };
+export type TelegramUpdate = { chatId: string };
 
 export function readSlackRequest(body: Uint8Array): SlackRequest | null {
   const text = new TextDecoder().decode(body);
@@ -78,6 +79,41 @@ export function readGitHubRepository(body: Uint8Array): { installationId: number
   } catch {
     return null;
   }
+}
+
+export function readTelegramUpdate(body: Uint8Array): TelegramUpdate | null {
+  try {
+    const value = JSON.parse(new TextDecoder().decode(body));
+    if (!isRecord(value)) return null;
+    const candidates = [
+      value.message,
+      value.edited_message,
+      value.callback_query && isRecord(value.callback_query) ? value.callback_query.message : null,
+      value.my_chat_member,
+    ];
+    for (const candidate of candidates) {
+      if (!isRecord(candidate) || !isRecord(candidate.chat) || typeof candidate.chat.id !== "number") continue;
+      return { chatId: String(candidate.chat.id) };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export async function verifyTelegramWebhookSecret(token: string, secret: string, botId: string): Promise<boolean> {
+  if (!token || !secret) return false;
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const bytes = new Uint8Array(
+    await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`telegram-webhook:${botId}`)),
+  );
+  return token === encodeBase64(bytes);
 }
 
 export function encodeBase64(bytes: Uint8Array): string {
