@@ -416,9 +416,9 @@ Workflow**. Connect the forked GitHub repository, select the `OpenBot` scheme, a
 Archive action that uploads to TestFlight. Use the `main` branch for release builds. Enable
 automatic signing for the app and all three extensions; the team is `QFNEHUV3DG`, and the App Group
 is `group.com.finefine.openbot`. Xcode Cloud requires access to the GitHub repository and an Apple
-Developer Program team with permission to create the app record and signing identifiers. During
-workflow setup, create the App Store Connect app record as **OpenBot** with bundle ID
-`com.finefine.openbot` if it does not already exist.
+Developer Program team with permission to create the app record and signing identifiers. The
+App Store Connect app record is **OpenBot Personal** (the display name **OpenBot** was already in
+use), with bundle ID `com.finefine.openbot` and SKU `com.finefine.openbot.ios`.
 
 The first Cloud build is the gate for verifying that Apple has registered every target identifier,
 enabled the required capabilities, and provisioned the App Group. Apple processes each uploaded
