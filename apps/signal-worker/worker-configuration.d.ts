@@ -10,6 +10,7 @@ interface Env {
   REMOTE_CONTROL_PLANE_URL?: string;
   DISCORD_BOT_TOKEN?: string;
   DISCORD_APPLICATION_ID?: string;
+  DISCORD_MESSAGE_CONTENT?: string;
   TURN_PROVIDER: "cloudflare-realtime" | "disabled";
   CLOUDFLARE_TURN_KEY_ID?: string;
   CLOUDFLARE_TURN_API_TOKEN?: string;

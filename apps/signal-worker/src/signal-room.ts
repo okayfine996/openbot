@@ -1,4 +1,6 @@
+import { DISCORD_GATEWAY_INTENTS, DISCORD_MESSAGE_CONTENT_INTENT } from "@openbot/contracts/discord-app";
 import type { RemoteAuthEvent } from "@openbot/contracts/signal-protocol/auth-events";
+import type { DiscordDelivery } from "@openbot/contracts/signal-protocol/discord-api";
 import { DISCORD_UPLOAD_BYTES_LIMIT } from "@openbot/contracts/signal-protocol/discord-api";
 import { DISCORD_ROUTE_AUDIENCE } from "@openbot/contracts/signal-protocol/discord-route";
 import { GITHUB_ROUTE_AUDIENCE } from "@openbot/contracts/signal-protocol/github-route";
@@ -25,11 +27,14 @@ import type { RemoteTicketClaims } from "@openbot/contracts/signal-protocol/tick
 import type { WebhookSignatureFormat } from "@openbot/contracts/signal-protocol/webhook-route";
 import { WEBHOOK_ROUTE_AUDIENCE, WEBHOOK_ROUTE_ID_PATTERN } from "@openbot/contracts/signal-protocol/webhook-route";
 import { type AuthenticatedTicket, SignalAuthError, SignalAuthenticator } from "./auth";
+import { DISCORD_DIRECT_MESSAGE_REPLY, type DiscordAction, DiscordState } from "./discord-state";
 
 const RECONNECT_GRACE_MS = 30_000;
 const MAX_CONNECTIONS_PER_HOST = 32;
 const MAX_MESSAGES_PER_MINUTE = 600;
 const MAX_QUEUED_DELIVERIES_PER_HOST = 100;
+const DISCORD_GATEWAY_URL = "https://gateway.discord.gg/?v=10&encoding=json";
+const DISCORD_GATEWAY_RECONNECT_MS = 5_000;
 
 type PeerKind = "host" | "client" | "ingress";
 type Peer = {
@@ -117,6 +122,7 @@ type GitHubDelivery = {
 type TelegramDelivery = { botId: string; chatId: string; bodyBase64: string; linkCode?: string; linked?: true };
 type QueuedRecord = { id: string; hostId: string; sealed: string; expiresAt: number };
 type IngressRouteRecord = { hostId: string; linkedAt: number; queueKey: string | null };
+type DiscordGatewayFrame = { op: number; d?: unknown; s?: number | null; t?: string | null };
 type TelegramCall = {
   type: "telegram-call";
   version: 1;
@@ -155,11 +161,21 @@ export class SignalRoom {
   readonly #pendingDeliveries = new Map<string, { peer: Peer; resolve: (status: number) => void }>();
   readonly #helloTimers = new Map<WebSocket, ReturnType<typeof setTimeout>>();
   readonly #iceServers = new Map<string, { expiresAt: number; value: IceServer[] }>();
+  readonly #discordState: DiscordState;
+  #discordSocket: WebSocket | null = null;
+  #discordSequence: number | null = null;
+  #discordSessionId: string | null = null;
+  #discordResumeUrl: string | null = null;
+  #discordConnecting = false;
+  #discordHeartbeat: ReturnType<typeof setInterval> | null = null;
+  #discordReconnect: ReturnType<typeof setTimeout> | null = null;
 
   constructor(state: DurableObjectState, env: Env) {
     this.#state = state;
     this.#env = env;
     this.#auth = new SignalAuthenticator(env.REMOTE_TICKET_JWKS_URL, env.REMOTE_SESSION_SECRET);
+    this.#discordState = new DiscordState(env.DISCORD_APPLICATION_ID ?? "");
+    if (env.DISCORD_BOT_TOKEN) this.#state.waitUntil(this.#ensureDiscordGateway());
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -274,6 +290,9 @@ export class SignalRoom {
           this.#send(peer.socket, { type: "discord-session", version: SIGNAL_PROTOCOL_VERSION, token, guilds });
         }
       }
+      const stored = await this.#state.storage.get<IngressRouteRecord>(`ingress-route:discord:${event.guildId}`);
+      if (stored && stored.linkedAt <= event.through)
+        await this.#state.storage.delete(`ingress-route:discord:${event.guildId}`);
       return true;
     }
     return false;
@@ -429,6 +448,23 @@ export class SignalRoom {
       return Response.json({ error: { code: "unknown_guild" } }, { status: 404 });
     const botToken = this.#env.DISCORD_BOT_TOKEN;
     if (!botToken) return Response.json({ error: { code: "unavailable" } }, { status: 503 });
+    if (input.op === "interactionReply") {
+      if (typeof input.interactionId !== "string" || typeof input.content !== "string")
+        return Response.json({ error: { code: "invalid_request" } }, { status: 400 });
+      const interactionToken = this.#discordState.interactionToken(input.interactionId, input.guildId);
+      if (!interactionToken) return Response.json({ error: { code: "not_found" } }, { status: 404 });
+      const response = await fetch(
+        `https://discord.com/api/v10/webhooks/${encodeURIComponent(this.#discordState.applicationId)}/${encodeURIComponent(interactionToken)}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: input.content, flags: 64, allowed_mentions: { parse: [] } }),
+        },
+      );
+      if (!response.ok)
+        return Response.json({ error: { code: discordErrorCode(response.status) } }, { status: response.status });
+      return Response.json({}, { status: 200 });
+    }
     if (input.op === "upload") {
       if (!parsed?.file || typeof input.channelId !== "string" || typeof input.filename !== "string")
         return Response.json({ error: { code: "invalid_request" } }, { status: 400 });
@@ -472,6 +508,217 @@ export class SignalRoom {
       return Response.json(discordRestResult(input, value), { status: 200 });
     } catch {
       return Response.json({ error: { code: "unavailable" } }, { status: 503 });
+    }
+  }
+
+  async #ensureDiscordGateway(): Promise<void> {
+    if (!this.#env.DISCORD_BOT_TOKEN || this.#discordSocket || this.#discordConnecting) return;
+    this.#discordConnecting = true;
+    try {
+      const response = await fetch(this.#discordResumeUrl ?? DISCORD_GATEWAY_URL, {
+        headers: { Upgrade: "websocket" },
+      });
+      const socket = response.webSocket;
+      if (!socket || response.status !== 101) throw new Error("Discord Gateway did not upgrade.");
+      socket.accept();
+      this.#discordSocket = socket;
+      this.#discordConnecting = false;
+      socket.addEventListener("message", (event) => void this.#receiveDiscordGateway(event.data));
+      socket.addEventListener("close", () => this.#discordGatewayClosed(socket));
+      socket.addEventListener("error", () => this.#discordGatewayClosed(socket));
+    } catch {
+      this.#discordConnecting = false;
+      this.#scheduleDiscordReconnect();
+    }
+  }
+
+  async #receiveDiscordGateway(data: unknown): Promise<void> {
+    const text = typeof data === "string" ? data : data instanceof ArrayBuffer ? new TextDecoder().decode(data) : null;
+    if (!text) return;
+    let frame: DiscordGatewayFrame;
+    try {
+      const value = JSON.parse(text);
+      if (!isRecord(value) || typeof value.op !== "number") return;
+      frame = {
+        op: value.op,
+        d: value.d,
+        s: typeof value.s === "number" ? value.s : null,
+        t: typeof value.t === "string" ? value.t : null,
+      };
+    } catch {
+      return;
+    }
+    if (frame.s !== null && frame.s !== undefined) this.#discordSequence = frame.s;
+    if (frame.op === 10) {
+      const heartbeatInterval =
+        isRecord(frame.d) && typeof frame.d.heartbeat_interval === "number" ? frame.d.heartbeat_interval : null;
+      if (heartbeatInterval === null) return this.#closeDiscordGateway();
+      this.#startDiscordHeartbeat(heartbeatInterval);
+      if (this.#discordSessionId && this.#discordSequence !== null) {
+        this.#sendDiscordGateway({
+          op: 6,
+          d: { token: this.#env.DISCORD_BOT_TOKEN, session_id: this.#discordSessionId, seq: this.#discordSequence },
+        });
+      } else {
+        this.#sendDiscordGateway({
+          op: 2,
+          d: {
+            token: this.#env.DISCORD_BOT_TOKEN,
+            intents:
+              DISCORD_GATEWAY_INTENTS +
+              (this.#env.DISCORD_MESSAGE_CONTENT !== "false" ? DISCORD_MESSAGE_CONTENT_INTENT : 0),
+            properties: { os: "linux", browser: "openbot", device: "openbot" },
+          },
+        });
+      }
+      return;
+    }
+    if (frame.op === 1) return this.#sendDiscordGateway({ op: 1, d: this.#discordSequence });
+    if (frame.op === 7) return this.#closeDiscordGateway();
+    if (frame.op === 9) {
+      if (frame.d === false) {
+        this.#discordSessionId = null;
+        this.#discordResumeUrl = null;
+        this.#discordSequence = null;
+      }
+      return this.#closeDiscordGateway();
+    }
+    if (frame.op !== 0 || !frame.t) return;
+    if (frame.t === "READY" && isRecord(frame.d)) {
+      if (typeof frame.d.session_id === "string") this.#discordSessionId = frame.d.session_id;
+      if (typeof frame.d.resume_gateway_url === "string") this.#discordResumeUrl = frame.d.resume_gateway_url;
+    }
+    try {
+      // The state normalizer validates each Gateway dispatch branch; this is the transport boundary.
+      // biome-ignore lint/nursery/noUnsafeTypeAssertion: Discord's versioned Gateway envelope is validated above.
+      const actions = this.#discordState.handle({ t: frame.t, d: frame.d } as Parameters<DiscordState["handle"]>[0]);
+      for (const action of actions) await this.#applyDiscordAction(action);
+    } catch {
+      // Gateway payloads are untrusted input; a malformed event must not tear down Signal.
+    }
+  }
+
+  #startDiscordHeartbeat(interval: number): void {
+    if (this.#discordHeartbeat) clearInterval(this.#discordHeartbeat);
+    this.#discordHeartbeat = setInterval(() => this.#sendDiscordGateway({ op: 1, d: this.#discordSequence }), interval);
+  }
+
+  #sendDiscordGateway(frame: DiscordGatewayFrame): void {
+    if (this.#discordSocket?.readyState === WebSocket.OPEN) this.#discordSocket.send(JSON.stringify(frame));
+  }
+
+  #closeDiscordGateway(): void {
+    const socket = this.#discordSocket;
+    if (socket) socket.close();
+    if (this.#discordHeartbeat) clearInterval(this.#discordHeartbeat);
+    this.#discordHeartbeat = null;
+    this.#discordSocket = null;
+    this.#scheduleDiscordReconnect();
+  }
+
+  #discordGatewayClosed(socket: WebSocket): void {
+    if (this.#discordSocket !== socket) return;
+    if (this.#discordHeartbeat) clearInterval(this.#discordHeartbeat);
+    this.#discordHeartbeat = null;
+    this.#discordSocket = null;
+    this.#scheduleDiscordReconnect();
+  }
+
+  #scheduleDiscordReconnect(): void {
+    if (this.#discordReconnect || !this.#env.DISCORD_BOT_TOKEN) return;
+    this.#discordReconnect = setTimeout(() => {
+      this.#discordReconnect = null;
+      void this.#ensureDiscordGateway();
+    }, DISCORD_GATEWAY_RECONNECT_MS);
+  }
+
+  async #applyDiscordAction(action: DiscordAction): Promise<void> {
+    if (action.type === "deliver") {
+      await this.#deliverDiscord(action.guildId, action.delivery);
+      if (action.delivery.kind === "removed")
+        await this.#controlPlanePost("/v2/remote/discord-route/removed", {
+          guildId: action.guildId,
+        });
+      return;
+    }
+    if (action.type === "reconcile") {
+      const guilds = this.#discordState.memberGuildIds();
+      if (guilds) await this.#controlPlanePost("/v2/remote/discord-route/reconcile", { guilds, before: Date.now() });
+      return;
+    }
+    const path =
+      action.type === "acknowledge"
+        ? `/interactions/${encodeURIComponent(action.interactionId)}/${encodeURIComponent(action.interactionToken)}/callback`
+        : `/channels/${encodeURIComponent(action.channelId)}/messages`;
+    const body =
+      action.type === "acknowledge"
+        ? { type: 6 }
+        : { content: DISCORD_DIRECT_MESSAGE_REPLY, allowed_mentions: { parse: [] } };
+    await this.#discordRest(path, "POST", body, action.type === "acknowledge");
+  }
+
+  async #deliverDiscord(guildId: string, delivery: DiscordDelivery): Promise<void> {
+    const peer = [...this.#peers.values()].find(
+      (candidate) => candidate.kind === "ingress" && candidate.discordGuilds.has(guildId),
+    );
+    const frame: QueuedSignalMessage = {
+      type: "discord-delivery",
+      version: SIGNAL_PROTOCOL_VERSION,
+      guildId,
+      delivery,
+    };
+    const encoded = JSON.stringify(frame);
+    if (new TextEncoder().encode(encoded).byteLength > SIGNAL_MESSAGE_BYTES_LIMIT) return;
+    if (peer?.socket.readyState === WebSocket.OPEN) {
+      this.#send(peer.socket, frame);
+      return;
+    }
+    if (delivery.kind === "removed") return;
+    const route = await this.#state.storage.get<IngressRouteRecord>(`ingress-route:discord:${guildId}`);
+    if (route?.queueKey) await this.#queueDelivery(route.hostId, route.queueKey, frame);
+  }
+
+  async #discordRest(path: string, method: "POST" | "PATCH", body: unknown, unauthenticated = false): Promise<void> {
+    const token = this.#env.DISCORD_BOT_TOKEN;
+    if (!token) return;
+    try {
+      await fetch(`https://discord.com/api/v10${path}`, {
+        method,
+        headers: {
+          ...(unauthenticated ? {} : { Authorization: `Bot ${token}` }),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+    } catch {
+      // Discord actions are best effort; Gateway reconnect and the next event restore state.
+    }
+  }
+
+  async #controlPlanePost(path: string, value: unknown): Promise<void> {
+    const origin = this.#env.REMOTE_CONTROL_PLANE_URL?.trim();
+    const secret = this.#env.REMOTE_AUTH_WEBHOOK_SECRET;
+    if (!origin || !secret) return;
+    const body = JSON.stringify(value);
+    const timestamp = Math.floor(Date.now() / 1_000).toString();
+    const key = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(secret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"],
+    );
+    const signature = encodeBase64Url(
+      new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${timestamp}.${body}`))),
+    );
+    try {
+      await fetch(new URL(path, origin), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "OpenBot-Timestamp": timestamp, "OpenBot-Signature": signature },
+        body,
+      });
+    } catch {
+      // Reconciliation will retry on the next Gateway READY/RESUMED event.
     }
   }
 
@@ -945,6 +1192,11 @@ export class SignalRoom {
         if (!isRecord(guild) || typeof guild.id !== "string" || typeof guild.linkedAt !== "number")
           return this.#fail(peer.socket, "authentication_required", "The Discord route is invalid.", 1008);
         peer.discordGuilds.set(guild.id, guild.linkedAt);
+        await this.#state.storage.put(`ingress-route:discord:${guild.id}`, {
+          hostId: peer.claims.hostId,
+          linkedAt: guild.linkedAt,
+          queueKey: peer.queueKey,
+        } satisfies IngressRouteRecord);
       }
       if (this.#env.DISCORD_BOT_TOKEN) {
         const session = encodeBase64Url(crypto.getRandomValues(new Uint8Array(32)));

@@ -49,9 +49,10 @@ claims, resume semantics, route ownership, and protocol frames.
   calls can use the Worker when `REMOTE_SIGNAL_INGRESS_WORKER_URL` is configured.
 - Sealed queue delivery is implemented for Slack and Telegram with host-side decryption, ACKs, TTL and
   per-host bounds. GitHub is intentionally not queueable.
-- Discord route tickets, session-scoped REST calls and revocation are present in the Worker, but the
-  Discord Gateway event adapter and multipart/interaction REST parity remain on Bun until compatibility
-  tests are complete.
+- Discord route tickets, a raw Gateway client, normalized message/interaction delivery, route
+  reconciliation, session-scoped REST, uploads and interaction replies are present in the Worker.
+  The Worker reuses the existing pure Discord normalizer; the Bun Gateway remains available as the
+  rollback path until a live canary is approved.
 
 ## Ordered implementation plan
 
@@ -62,7 +63,7 @@ claims, resume semantics, route ownership, and protocol frames.
 | 2. TURN | Realtime TURN provider, bounded TTL, redacted failures | 1 | Direct ICE and relay ICE both work; TURN token never reaches logs or repository |
 | 3. Revocation | Persistent replay, host/session revocation, signed auth events and alarms | 1 | Revoked tickets and sessions are rejected without restarting the Worker |
 | 4. Generic webhook | Route ticket, signed public ingress, host-side verification, delivery result | 3 | Valid delivery reaches the correct host; invalid, stale and revoked routes fail safely |
-| 5. Bot adapters | Slack/GitHub ingress, Telegram, sealed queue, then Discord Gateway and REST parity | 4 | Each migrated adapter preserves payload/signature/ack semantics and has focused tests |
+| 5. Bot adapters | Slack/GitHub ingress, Telegram, sealed queue, Discord Gateway and REST parity | 4 | Each migrated adapter preserves payload/signature/ack semantics and has focused tests |
 | 6. Cutover | Configure URLs, canary, observe, rollback plan | 5 | Canary is stable, quotas are visible, and rollback to Bun is tested |
 | 7. Cleanup | Remove machine-specific Signal homes after a measured migration window | 6 | No client or ingress dependency remains on the retired path |
 
@@ -87,6 +88,8 @@ explicit operator action after phase exit conditions are met.
   replacement-socket, error, and disconnect meanings.
 - Clients fall back to Bun when Worker routing is not configured.
 - WebSocket messages and public webhook bodies are bounded to 64 KiB and rate-limited where applicable.
+- Discord Gateway events are normalized before host delivery; interaction acknowledgement happens before
+  host work, and interaction tokens are never sent to hosts.
 - Mobile and desktop Team API behavior remains unchanged: `rpc`, `events`, `files`, and chat data
   stay on existing data channels.
 
@@ -119,6 +122,7 @@ explicit operator action after phase exit conditions are met.
 | DO eviction loses active in-memory sockets | Connected clients disconnect | Reconnect/resume path; persist replay/revocation facts; test eviction behavior |
 | Ingress parity gap | Missed or duplicated bot messages | Keep Bun routes active until adapter tests and canary pass |
 | TURN/SFU egress exceeds allowance | Unexpected bill | Prefer direct ICE, cap TTL, monitor egress, set alerts, stop relay on budget breach |
+| Discord Gateway remains an outbound DO connection | Continuous DO duration and reconnect traffic | Enable only with the Discord bot secret, keep one bounded Gateway instance, monitor duration, and retain Bun rollback |
 | Free quotas are exceeded | Requests fail or service is throttled/blocked | Treat allowances as finite; alert before limits; keep Bun rollback |
 | License misuse | Legal exposure | PolyForm Noncommercial is suitable for personal/noncommercial use; obtain permission before commercial use |
 | Secret or payload leakage | Security/privacy incident | Scoped tokens, HMAC events, no payload persistence, redacted errors, bounded bodies |
@@ -155,7 +159,8 @@ into chat or commit them:
 4. DNS/custom-domain ownership for `signal-worker.openbot.run`, or a replacement hostname.
 5. Deliberate `REMOTE_SIGNAL_WORKER_URL`, optional `REMOTE_SIGNAL_INGRESS_WORKER_URL`, and the
    Worker `/internal/auth-events` URL in Auth API webhook fan-out configuration.
-6. Rollback owner and egress/quota alert destination.
+6. Discord bot token/application ID and the Message Content intent decision, if Discord is enabled.
+7. Rollback owner and egress/quota alert destination.
 
 Before cutover, confirm current quotas, Realtime allowance, billing boundary, retention/logging
 settings, and the PolyForm Noncommercial terms in [`LICENSE`](../../LICENSE).
