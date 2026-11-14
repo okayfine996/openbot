@@ -14,7 +14,18 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === "/internal/auth-events" && request.method === "POST") {
+      const contentLength = Number(request.headers.get("Content-Length") ?? "0");
+      if (contentLength > 64 * 1024)
+        return Response.json(
+          { error: { code: "body_too_large", message: "The auth event body is too large." } },
+          { status: 413 },
+        );
       const body = await request.text();
+      if (new TextEncoder().encode(body).byteLength > 64 * 1024)
+        return Response.json(
+          { error: { code: "body_too_large", message: "The auth event body is too large." } },
+          { status: 413 },
+        );
       const valid = await verifyWebhookSignature(
         body,
         request.headers.get("OpenBot-Timestamp"),
