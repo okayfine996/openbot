@@ -59,7 +59,7 @@
     "EMAIL_LICENSE_FROM": "licenses@openbot.run",
     "REMOTE_TICKET_KEY_ID": "openbot-remote-1",
     "REMOTE_SIGNAL_URL": "wss://signal.openbot.run/v1/signal",
-    // Optional Cloudflare Durable Objects Signal for Team WebRTC. Platform ingress stays on the Bun Signal URL until migrated.
+    // Optional Cloudflare Durable Objects Signal for Team WebRTC.
     "REMOTE_SIGNAL_WORKER_URL": "",
     "REMOTE_SIGNAL_INGRESS_WORKER_URL": "",
     // Active Signal machines (docs/remote-session-deployment.md): a is sui-alexandria and b is signal2,

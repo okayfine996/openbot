@@ -10,9 +10,10 @@ Cloudflare Realtime TURN credential refresh. Team data still stays on the WebRTC
 `POST /v1/webhooks/:routeId` forwards the exact body and signed headers to the host. The host remains
 the trust boundary for webhook HMAC verification. The Worker stores neither the body nor the headers.
 
-The existing Bun Signal service remains the migration path for Slack, Telegram, Discord, GitHub and
-generic webhook ingress until those routes are moved into the Worker. Do not point production
-ingress at this Worker until that migration is complete.
+Slack, Telegram, Discord and GitHub connector routes can use this Worker when the optional ingress URL
+is configured. The Bun Signal service remains the rollback path. Generic webhook HMAC verification and
+host-side connector handling still remain in the host process; do not enable production cutover until a
+canary, quota review and rollback test are approved.
 
 ## Local checks
 

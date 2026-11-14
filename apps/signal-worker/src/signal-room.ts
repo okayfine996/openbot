@@ -6,6 +6,7 @@ import { DISCORD_ROUTE_AUDIENCE } from "@openbot/contracts/signal-protocol/disco
 import { GITHUB_ROUTE_AUDIENCE } from "@openbot/contracts/signal-protocol/github-route";
 import {
   INGRESS_QUEUE_CAPABILITY,
+  type IngressRoute,
   isIngressQueueKey,
   type QueuedSignalMessage,
   sealQueuedDelivery,
@@ -169,6 +170,7 @@ export class SignalRoom {
   #discordConnecting = false;
   #discordHeartbeat: ReturnType<typeof setInterval> | null = null;
   #discordReconnect: ReturnType<typeof setTimeout> | null = null;
+  readonly #discordCallWindows = new Map<string, { startedAt: number; count: number }>();
 
   constructor(state: DurableObjectState, env: Env) {
     this.#state = state;
@@ -333,7 +335,8 @@ export class SignalRoom {
     };
     if (!peer || peer.socket.readyState !== WebSocket.OPEN) {
       const route = await this.#state.storage.get<IngressRouteRecord>(`ingress-route:slack:${key}`);
-      if (route?.queueKey) {
+      const wake = await this.#routeWake({ platform: "slack", appId: delivery.appId, teamId: delivery.teamId });
+      if (route?.queueKey && wake?.hostId === route.hostId && wake.state === "starting") {
         return (await this.#queueDelivery(route.hostId, route.queueKey, frame)) ? 200 : 503;
       }
       return 503;
@@ -381,7 +384,12 @@ export class SignalRoom {
       const route = await this.#state.storage.get<IngressRouteRecord>(
         `ingress-route:telegram:${delivery.botId}:${delivery.chatId}`,
       );
-      if (route?.queueKey) {
+      const wake = await this.#routeWake({
+        platform: "telegram",
+        botId: delivery.botId,
+        chatId: delivery.chatId,
+      });
+      if (route?.queueKey && wake?.hostId === route.hostId && wake.state === "starting") {
         const queued = await this.#queueDelivery(route.hostId, route.queueKey, {
           type: "telegram-delivery",
           version: SIGNAL_PROTOCOL_VERSION,
@@ -440,6 +448,8 @@ export class SignalRoom {
     const peer = this.#discordSessions.get(token);
     if (!peer || peer.socket.readyState !== WebSocket.OPEN)
       return Response.json({ error: { code: "unauthorized" } }, { status: 401 });
+    if (!this.#acceptDiscordCall(peer.claims.hostId))
+      return Response.json({ error: { code: "rate_limited", retryAfterMs: 60_000 } }, { status: 429 });
     const parsed = await readDiscordRequest(request);
     const input = parsed?.input ?? null;
     if (!isRecord(input) || typeof input.op !== "string" || typeof input.guildId !== "string")
@@ -675,7 +685,9 @@ export class SignalRoom {
     }
     if (delivery.kind === "removed") return;
     const route = await this.#state.storage.get<IngressRouteRecord>(`ingress-route:discord:${guildId}`);
-    if (route?.queueKey) await this.#queueDelivery(route.hostId, route.queueKey, frame);
+    const wake = await this.#routeWake({ platform: "discord", guildId });
+    if (route?.queueKey && wake?.hostId === route.hostId && wake.state === "starting")
+      await this.#queueDelivery(route.hostId, route.queueKey, frame);
   }
 
   async #discordRest(path: string, method: "POST" | "PATCH", body: unknown, unauthenticated = false): Promise<void> {
@@ -696,9 +708,26 @@ export class SignalRoom {
   }
 
   async #controlPlanePost(path: string, value: unknown): Promise<void> {
+    await this.#controlPlaneRequest(path, value);
+  }
+
+  async #routeWake(route: IngressRoute): Promise<{ hostId: string | null; state: string } | null> {
+    const response = await this.#controlPlaneRequest("/v2/remote/route-wake", { route, wake: true });
+    if (!response?.ok) return null;
+    const value = await response.json().catch(() => null);
+    if (
+      !isRecord(value) ||
+      (value.hostId !== null && typeof value.hostId !== "string") ||
+      typeof value.state !== "string"
+    )
+      return null;
+    return { hostId: value.hostId, state: value.state };
+  }
+
+  async #controlPlaneRequest(path: string, value: unknown): Promise<Response | null> {
     const origin = this.#env.REMOTE_CONTROL_PLANE_URL?.trim();
     const secret = this.#env.REMOTE_AUTH_WEBHOOK_SECRET;
-    if (!origin || !secret) return;
+    if (!origin || !secret) return null;
     const body = JSON.stringify(value);
     const timestamp = Math.floor(Date.now() / 1_000).toString();
     const key = await crypto.subtle.importKey(
@@ -712,14 +741,26 @@ export class SignalRoom {
       new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${timestamp}.${body}`))),
     );
     try {
-      await fetch(new URL(path, origin), {
+      return await fetch(new URL(path, origin), {
         method: "POST",
         headers: { "Content-Type": "application/json", "OpenBot-Timestamp": timestamp, "OpenBot-Signature": signature },
         body,
       });
     } catch {
       // Reconciliation will retry on the next Gateway READY/RESUMED event.
+      return null;
     }
+  }
+
+  #acceptDiscordCall(hostId: string): boolean {
+    const now = Date.now();
+    const current = this.#discordCallWindows.get(hostId);
+    if (!current || now - current.startedAt >= 60_000) {
+      this.#discordCallWindows.set(hostId, { startedAt: now, count: 1 });
+      return true;
+    }
+    current.count += 1;
+    return current.count <= MAX_MESSAGES_PER_MINUTE;
   }
 
   async #telegramCall(peer: Peer, call: TelegramCall): Promise<void> {
