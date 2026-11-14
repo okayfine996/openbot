@@ -6,5 +6,5 @@
       "@openbot/contracts/*": ["../../packages/contracts/src/*"]
     }
   },
-  "include": ["src/**/*.ts", "worker-configuration.d.ts"]
+  "include": ["src/**/*.ts", "vitest.config.ts", "worker-configuration.d.ts"]
 }

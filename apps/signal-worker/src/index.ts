@@ -44,7 +44,7 @@ export default {
   },
 };
 
-async function verifyWebhookSignature(
+export async function verifyWebhookSignature(
   body: string,
   timestamp: string | null,
   signature: string | null,

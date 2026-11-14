@@ -45,7 +45,9 @@ export class SignalAuthenticator {
         audience: RESUME_AUDIENCE,
         algorithms: ["HS256"],
       });
-      return { claims: readClaims(payload), resumed: true };
+      const claims = readClaims(payload);
+      await this.#assertActive(claims, state);
+      return { claims, resumed: true };
     } catch {
       throw new SignalAuthError("invalid token");
     }
@@ -70,6 +72,13 @@ export class SignalAuthenticator {
     } catch {
       throw new SignalAuthError("invalid ticket");
     }
+  }
+
+  async #assertActive(claims: RemoteTicketClaims, state: DurableObjectState): Promise<void> {
+    const revokedEpoch = await state.storage.get<number>(`revoke:host:${claims.hostId}`);
+    const revokedSession = await state.storage.get<number>(`revoke:session:${claims.sessionId}`);
+    if ((revokedEpoch !== undefined && claims.authEpoch <= revokedEpoch) || revokedSession !== undefined)
+      throw new SignalAuthError("session revoked");
   }
 }
 
