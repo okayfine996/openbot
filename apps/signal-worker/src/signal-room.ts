@@ -1,6 +1,12 @@
 import type { RemoteAuthEvent } from "@openbot/contracts/signal-protocol/auth-events";
 import { DISCORD_ROUTE_AUDIENCE } from "@openbot/contracts/signal-protocol/discord-route";
 import { GITHUB_ROUTE_AUDIENCE } from "@openbot/contracts/signal-protocol/github-route";
+import {
+  INGRESS_QUEUE_CAPABILITY,
+  isIngressQueueKey,
+  type QueuedSignalMessage,
+  sealQueuedDelivery,
+} from "@openbot/contracts/signal-protocol/ingress-queue";
 import type { IceServer, SignalChannel, SignalProtocolVersion } from "@openbot/contracts/signal-protocol/messages";
 import { SIGNAL_MESSAGE_BYTES_LIMIT, SIGNAL_PROTOCOL_VERSION } from "@openbot/contracts/signal-protocol/messages";
 import { SLACK_ROUTE_AUDIENCE } from "@openbot/contracts/signal-protocol/slack-route";
@@ -22,6 +28,7 @@ import { type AuthenticatedTicket, SignalAuthError, SignalAuthenticator } from "
 const RECONNECT_GRACE_MS = 30_000;
 const MAX_CONNECTIONS_PER_HOST = 32;
 const MAX_MESSAGES_PER_MINUTE = 600;
+const MAX_QUEUED_DELIVERIES_PER_HOST = 100;
 
 type PeerKind = "host" | "client" | "ingress";
 type Peer = {
@@ -36,6 +43,7 @@ type Peer = {
   githubRepositories: Set<string>;
   telegramRoutes: Map<string, number>;
   discordGuilds: Map<string, number>;
+  queueKey: string | null;
   webhookFormats: Set<WebhookSignatureFormat>;
   messageWindow: { startedAt: number; count: number };
 };
@@ -47,6 +55,7 @@ type ReadyFrame = {
   resumeToken: string;
   iceServers: IceServer[];
   reconnectGraceMs?: number;
+  capabilities?: string[];
 };
 type Hello = {
   type: "hello";
@@ -60,6 +69,7 @@ type Hello = {
   githubRoute?: string;
   telegramRoute?: string;
   discordRoute?: string;
+  queueKey?: string;
   webhookFormats?: string[];
 };
 type Relay = {
@@ -104,6 +114,8 @@ type GitHubDelivery = {
   bodyBase64: string;
 };
 type TelegramDelivery = { botId: string; chatId: string; bodyBase64: string; linkCode?: string; linked?: true };
+type QueuedRecord = { id: string; hostId: string; sealed: string; expiresAt: number };
+type IngressRouteRecord = { hostId: string; linkedAt: number; queueKey: string | null };
 type TelegramCall = {
   type: "telegram-call";
   version: 1;
@@ -237,6 +249,8 @@ export class SignalRoom {
         route.peer.slackRoutes.delete(key);
         this.#slackRoutes.delete(key);
       }
+      const stored = await this.#state.storage.get<IngressRouteRecord>(`ingress-route:slack:${key}`);
+      if (stored && stored.linkedAt <= event.through) await this.#state.storage.delete(`ingress-route:slack:${key}`);
       return true;
     }
     if (event.type === "telegram-route-revoked") {
@@ -246,6 +260,8 @@ export class SignalRoom {
         route.peer.telegramRoutes.delete(key);
         this.#telegramRoutes.delete(key);
       }
+      const stored = await this.#state.storage.get<IngressRouteRecord>(`ingress-route:telegram:${key}`);
+      if (stored && stored.linkedAt <= event.through) await this.#state.storage.delete(`ingress-route:telegram:${key}`);
       return true;
     }
     if (event.type === "discord-route-revoked") {
@@ -283,10 +299,10 @@ export class SignalRoom {
   }
 
   async #deliverSlack(delivery: SlackDelivery): Promise<number> {
-    const peer = this.#slackRoutes.get(`${delivery.appId}:${delivery.teamId}`)?.peer;
-    if (!peer || peer.socket.readyState !== WebSocket.OPEN) return 503;
-    return this.#waitForDelivery(peer, delivery.requestId, {
-      type: "slack-delivery",
+    const key = `${delivery.appId}:${delivery.teamId}`;
+    const peer = this.#slackRoutes.get(key)?.peer;
+    const frame: QueuedSignalMessage = {
+      type: "slack-delivery" as const,
       version: SIGNAL_PROTOCOL_VERSION,
       requestId: delivery.requestId,
       teamId: delivery.teamId,
@@ -294,6 +310,16 @@ export class SignalRoom {
       retryNum: delivery.retryNum,
       retryReason: delivery.retryReason,
       bodyBase64: delivery.bodyBase64,
+    };
+    if (!peer || peer.socket.readyState !== WebSocket.OPEN) {
+      const route = await this.#state.storage.get<IngressRouteRecord>(`ingress-route:slack:${key}`);
+      if (route?.queueKey) {
+        return (await this.#queueDelivery(route.hostId, route.queueKey, frame)) ? 200 : 503;
+      }
+      return 503;
+    }
+    return this.#waitForDelivery(peer, delivery.requestId, {
+      ...frame,
     });
   }
 
@@ -331,7 +357,23 @@ export class SignalRoom {
         linked = true;
       }
     }
-    if (!peer || peer.socket.readyState !== WebSocket.OPEN) return 200;
+    if (!peer || peer.socket.readyState !== WebSocket.OPEN) {
+      const route = await this.#state.storage.get<IngressRouteRecord>(
+        `ingress-route:telegram:${delivery.botId}:${delivery.chatId}`,
+      );
+      if (route?.queueKey) {
+        const queued = await this.#queueDelivery(route.hostId, route.queueKey, {
+          type: "telegram-delivery",
+          version: SIGNAL_PROTOCOL_VERSION,
+          botId: delivery.botId,
+          chatId: delivery.chatId,
+          bodyBase64: delivery.bodyBase64,
+          ...(delivery.linked || linked ? { linked: true } : {}),
+        });
+        return queued ? 200 : 503;
+      }
+      return 200;
+    }
     this.#send(peer.socket, {
       type: "telegram-delivery",
       version: SIGNAL_PROTOCOL_VERSION,
@@ -650,8 +692,19 @@ export class SignalRoom {
     for (const [key, expiresAt] of tickets) {
       if (expiresAt <= now) await this.#state.storage.delete(key);
     }
-    const remaining = await this.#state.storage.list<number>({ prefix: "ticket:", limit: 1 });
-    if (remaining.size > 0) await this.#state.storage.setAlarm(Date.now() + 60_000);
+    const queued = await this.#state.storage.list<QueuedRecord>({ prefix: "ingress-queue:" });
+    for (const [key, record] of queued) {
+      if (!record || record.expiresAt <= Date.now()) await this.#state.storage.delete(key);
+    }
+    const uploads = await this.#state.storage.list<number>({ prefix: "telegram-upload:" });
+    for (const [key, expiresAt] of uploads) {
+      if (expiresAt <= now) await this.#state.storage.delete(key);
+    }
+    const remainingTickets = await this.#state.storage.list({ prefix: "ticket:", limit: 1 });
+    const remainingQueue = await this.#state.storage.list({ prefix: "ingress-queue:", limit: 1 });
+    const remainingUploads = await this.#state.storage.list({ prefix: "telegram-upload:", limit: 1 });
+    if (remainingTickets.size > 0 || remainingQueue.size > 0 || remainingUploads.size > 0)
+      await this.#state.storage.setAlarm(Date.now() + 60_000);
   }
 
   #registerSocket(socket: WebSocket): void {
@@ -690,6 +743,14 @@ export class SignalRoom {
       if (pending?.peer === peer) pending.resolve(message.status);
       return;
     }
+    if (isQueuedDeliveryAck(message)) {
+      if (peer.kind !== "ingress" || !peer.queueKey)
+        return this.#fail(socket, "permission_denied", "Queue acknowledgements require an ingress peer.", 1008);
+      const key = `ingress-queue:${peer.claims.hostId}:${message.id}`;
+      const queued = await this.#state.storage.get<QueuedRecord>(key);
+      if (queued?.hostId === peer.claims.hostId) await this.#state.storage.delete(key);
+      return;
+    }
     if (isTelegramCall(message)) return this.#telegramCall(peer, message);
     if (isRelay(message)) return this.#relay(peer, message);
     return this.#fail(socket, "invalid_message", "Unsupported message.", 1008);
@@ -722,6 +783,7 @@ export class SignalRoom {
       githubRepositories: new Set(),
       telegramRoutes: new Map(),
       discordGuilds: new Map(),
+      queueKey: hello.peer === "ingress" && hello.queueKey && isIngressQueueKey(hello.queueKey) ? hello.queueKey : null,
       webhookFormats: new Set(
         hello.webhookFormats?.filter((format): format is WebhookSignatureFormat => format === "standard-webhooks"),
       ),
@@ -802,6 +864,11 @@ export class SignalRoom {
         const key = `${team.appId}:${team.id}`;
         peer.slackRoutes.set(key, team.linkedAt);
         this.#slackRoutes.set(key, { peer, linkedAt: team.linkedAt });
+        await this.#state.storage.put(`ingress-route:slack:${key}`, {
+          hostId: peer.claims.hostId,
+          linkedAt: team.linkedAt,
+          queueKey: peer.queueKey,
+        } satisfies IngressRouteRecord);
       }
     }
     if (hello.githubRoute) {
@@ -835,6 +902,11 @@ export class SignalRoom {
         const key = `${chat.botId}:${chat.id}`;
         peer.telegramRoutes.set(key, chat.linkedAt);
         this.#telegramRoutes.set(key, { peer, linkedAt: chat.linkedAt });
+        await this.#state.storage.put(`ingress-route:telegram:${key}`, {
+          hostId: peer.claims.hostId,
+          linkedAt: chat.linkedAt,
+          queueKey: peer.queueKey,
+        } satisfies IngressRouteRecord);
       }
     }
     if (hello.discordRoute) {
@@ -860,6 +932,7 @@ export class SignalRoom {
     this.#send(peer.socket, await this.#ready(peer, null));
     if (hello.webhookRoute) this.#send(peer.socket, { type: "webhook-ready", version: SIGNAL_PROTOCOL_VERSION });
     if (hello.githubRoute) this.#send(peer.socket, { type: "github-ready", version: SIGNAL_PROTOCOL_VERSION });
+    await this.#flushQueue(peer);
   }
 
   #connect(host: Peer, client: Peer, resumed: boolean): void {
@@ -911,8 +984,51 @@ export class SignalRoom {
       connectionId,
       resumeToken: peer.resumeToken,
       iceServers: await this.#getIceServers(peer.claims.sessionId, peer.claims.sessionExpiresAt),
-      ...(this.#telegramTokens().size > 0 ? { capabilities: ["telegram"] } : {}),
+      ...(this.#telegramTokens().size > 0 || (peer.kind === "ingress" && peer.queueKey)
+        ? {
+            capabilities: [
+              ...(this.#telegramTokens().size > 0 ? ["telegram"] : []),
+              ...(peer.kind === "ingress" && peer.queueKey ? [INGRESS_QUEUE_CAPABILITY] : []),
+            ],
+          }
+        : {}),
     };
+  }
+
+  async #flushQueue(peer: Peer): Promise<void> {
+    if (peer.kind !== "ingress" || !peer.queueKey) return;
+    const now = Date.now();
+    const records = await this.#state.storage.list<QueuedRecord>({ prefix: `ingress-queue:${peer.claims.hostId}:` });
+    for (const [key, record] of records) {
+      if (record.expiresAt <= now) {
+        await this.#state.storage.delete(key);
+        continue;
+      }
+      this.#send(peer.socket, {
+        type: "queued-delivery",
+        version: SIGNAL_PROTOCOL_VERSION,
+        id: record.id,
+        sealed: record.sealed,
+      });
+    }
+  }
+
+  async #queueDelivery(hostId: string, queueKey: string, message: QueuedSignalMessage): Promise<boolean> {
+    const existing = await this.#state.storage.list({
+      prefix: `ingress-queue:${hostId}:`,
+      limit: MAX_QUEUED_DELIVERIES_PER_HOST,
+    });
+    if (existing.size >= MAX_QUEUED_DELIVERIES_PER_HOST) return false;
+    const id = crypto.randomUUID();
+    const record: QueuedRecord = {
+      id,
+      hostId,
+      sealed: await sealQueuedDelivery(queueKey, hostId, message),
+      expiresAt: Date.now() + 10 * 60_000,
+    };
+    await this.#state.storage.put(`ingress-queue:${hostId}:${id}`, record);
+    await this.#state.storage.setAlarm(Date.now() + 10 * 60_000);
+    return true;
   }
 
   async #getIceServers(sessionId: string, sessionExpiresAt: number): Promise<IceServer[]> {
@@ -1045,6 +1161,7 @@ function isHello(value: unknown): value is Hello {
     (value.githubRoute === undefined || typeof value.githubRoute === "string") &&
     (value.telegramRoute === undefined || typeof value.telegramRoute === "string") &&
     (value.discordRoute === undefined || typeof value.discordRoute === "string") &&
+    (value.queueKey === undefined || typeof value.queueKey === "string") &&
     (value.webhookFormats === undefined ||
       (Array.isArray(value.webhookFormats) && value.webhookFormats.every((format) => typeof format === "string")))
   );
@@ -1089,6 +1206,16 @@ function isGitHubResult(value: unknown): value is { requestId: string; status: n
     value.type === "github-delivery-result" &&
     typeof value.requestId === "string" &&
     typeof value.status === "number"
+  );
+}
+
+function isQueuedDeliveryAck(value: unknown): value is { type: "queued-delivery-ack"; id: string } {
+  return (
+    isRecord(value) &&
+    value.type === "queued-delivery-ack" &&
+    value.version === SIGNAL_PROTOCOL_VERSION &&
+    typeof value.id === "string" &&
+    value.id.length > 0
   );
 }
 
