@@ -24,8 +24,12 @@ export class TurnRelays {
   readonly #available = new Map<string, boolean>();
   readonly #probes: ReadonlyMap<string, Effect.Effect<void, TurnProbeError>>;
 
-  constructor(config: Pick<RemoteApiConfig, "turnHosts" | "turnPort" | "turnSecret">) {
+  constructor(config: Pick<RemoteApiConfig, "turnProvider" | "turnHosts" | "turnPort" | "turnSecret">) {
     this.#hosts = config.turnHosts;
+    if (config.turnProvider !== "coturn" || !config.turnSecret) {
+      this.#probes = new Map();
+      return;
+    }
     this.#probes = new Map(
       config.turnHosts.map((host) => [
         host,

@@ -72,7 +72,7 @@ export interface RemoteTokenProvider {
   verifyResumeToken(token: string): Effect.Effect<RemoteTicketClaims, RemoteTokenError | RemoteTokenUnavailableError>;
   validateClaims(claims: RemoteTicketClaims): Effect.Effect<boolean, RemoteTokenUnavailableError>;
   issueResumeToken(claims: RemoteTicketClaims): Effect.Effect<string, RemoteTokenError>;
-  iceServers(claims: RemoteTicketClaims): IceServer[];
+  iceServers(claims: RemoteTicketClaims): Effect.Effect<IceServer[], RemoteTokenError>;
   /** Without a route verifier, no ingress socket connects. */
   verifySlackRoute?(token: string, hostId: string): Effect.Effect<SlackRoute, RemoteTokenError>;
   validateSlackRoute?(hostId: string, teams: SlackRouteTeam[]): Effect.Effect<string[], RemoteTokenError>;
@@ -555,7 +555,7 @@ export class SignalService {
         const resumeToken = yield* tokens.issueResumeToken(peer.claims);
         const now = Date.now();
         if (!peer.turnCredentials || now - peer.turnCredentials.issuedAt >= TURN_CREDENTIAL_REUSE_MILLISECONDS) {
-          peer.turnCredentials = { iceServers: this.#tokens.iceServers(peer.claims), issuedAt: now };
+          peer.turnCredentials = { iceServers: yield* this.#tokens.iceServers(peer.claims), issuedAt: now };
         }
         this.#send(socket, {
           type: "ready",
@@ -1560,7 +1560,7 @@ export class SignalService {
             version: 1,
             connectionId: null,
             resumeToken,
-            iceServers: this.#tokens.iceServers(claims),
+            iceServers: yield* this.#tokens.iceServers(claims),
             ...this.#capabilities("ingress"),
           });
           if (webhookRoute.routes.length > 0) {
@@ -1606,7 +1606,7 @@ export class SignalService {
             version: 1,
             connectionId: null,
             resumeToken,
-            iceServers: this.#tokens.iceServers(claims),
+            iceServers: yield* this.#tokens.iceServers(claims),
           });
           yield* this.#restoreWaitingClients(peer);
           return;
@@ -1658,7 +1658,7 @@ export class SignalService {
           version: 1,
           connectionId,
           resumeToken,
-          iceServers: this.#tokens.iceServers(claims),
+          iceServers: yield* this.#tokens.iceServers(claims),
           reconnectGraceMs: this.#reconnectGrace(host),
         });
         this.#send(host.socket, {
@@ -1744,7 +1744,7 @@ export class SignalService {
           version: 1,
           connectionId,
           resumeToken,
-          iceServers: this.#tokens.iceServers(client.claims),
+          iceServers: yield* this.#tokens.iceServers(client.claims),
           reconnectGraceMs: this.#reconnectGrace(host),
         });
         this.#send(host.socket, {

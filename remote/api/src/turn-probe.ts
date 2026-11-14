@@ -169,6 +169,7 @@ const openSocket = (address: string, port: number) => {
 /** Allocates one UDP relay on the TURN server `host` and frees it at once. */
 export const probeTurnAllocation = Effect.fn("TurnProbe.allocate")(
   function* (host: string, config: Pick<RemoteApiConfig, "turnPort" | "turnSecret">) {
+    if (!config.turnSecret) return;
     const { address } = yield* Effect.tryPromise({
       try: () => lookup(host, { family: 4 }),
       catch: noAnswer,

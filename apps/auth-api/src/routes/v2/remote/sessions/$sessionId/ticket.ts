@@ -1,10 +1,12 @@
 import { isString } from "@openbot/contracts/runtime-values";
 import { createFileRoute } from "@tanstack/solid-router";
 import { Effect } from "effect";
+import { sha256 } from "../../../../../server/crypto";
 import { runApiResponse } from "../../../../../server/effect-runtime";
 import { readJsonObject } from "../../../../../server/json-body";
 import {
   apiError,
+  bearerToken,
   json,
   remoteControlPlaneErrorResponse,
   requestRemoteControlPlane,
@@ -19,12 +21,19 @@ export const Route = createFileRoute("/v2/remote/sessions/$sessionId/ticket")({
           Effect.gen(function* () {
             const user = yield* requestUser(request);
             if (!user) return apiError(401, "unauthorized", "Sign in is required.");
+            const token = bearerToken(request);
+            if (!token) return apiError(401, "unauthorized", "Sign in is required.");
             const body = yield* readJsonObject(request);
             if (!isString(body.clientPublicKey)) {
               return apiError(400, "invalid_remote_request", "The client public key is required.");
             }
             return json(
-              yield* requestRemoteControlPlane().issueSessionTicket(user.id, params.sessionId, body.clientPublicKey),
+              yield* requestRemoteControlPlane().issueSessionTicket(
+                user.id,
+                params.sessionId,
+                body.clientPublicKey,
+                yield* sha256(token),
+              ),
             );
           }),
           remoteControlPlaneErrorResponse,

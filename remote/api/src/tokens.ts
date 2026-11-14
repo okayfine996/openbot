@@ -117,6 +117,17 @@ const telegramRouteClaimsSchema = z.object({
     )
     .max(TELEGRAM_ROUTE_CHATS_LIMIT),
 });
+const cloudflareIceServersResponseSchema = z.strictObject({
+  iceServers: z
+    .array(
+      z.strictObject({
+        urls: z.union([z.string().min(1), z.array(z.string().min(1)).min(1)]),
+        username: z.string().min(1).optional(),
+        credential: z.string().min(1).optional(),
+      }),
+    )
+    .min(1),
+});
 const SLACK_SIGNATURE_TOLERANCE_SECONDS = 5 * 60;
 
 export class RemoteTokenError extends Schema.TaggedError<RemoteTokenError>()("RemoteTokenError", {
@@ -147,9 +158,13 @@ export class RemoteTokenService {
   readonly #ticketKey: JWTVerifyGetKey;
   readonly #remoteTicketKey: RemoteJWKSet | null;
   readonly #sessionSecret: Uint8Array;
+  readonly #fetch: typeof fetch;
   // `SIGNAL_ID`: a ticket or resume token whose `signal` claim names another machine is refused.
   readonly #signalId: string | null;
-  readonly #turnSecret: string;
+  readonly #turnProvider: "coturn" | "cloudflare-realtime";
+  readonly #turnSecret: string | null;
+  readonly #cloudflareTurnKeyId: string | null;
+  readonly #cloudflareTurnApiToken: string | null;
   // The relay for a host and its clients (`TurnRelays.pick`).
   readonly #turnHost: (hostId: string) => string;
   readonly #turnPort: number;
@@ -174,6 +189,7 @@ export class RemoteTokenService {
     string,
     { expiresAt: number; hostId: string; sessionId: string; authEpoch: number }
   >();
+  readonly #cloudflareIceServers = new Map<string, { expiresAt: number; iceServers: IceServer[] }>();
 
   constructor(
     config: Pick<
@@ -181,10 +197,13 @@ export class RemoteTokenService {
       | "ticketJwks"
       | "ticketJwksUrl"
       | "sessionSecret"
+      | "turnProvider"
       | "turnSecret"
       | "turnHosts"
       | "turnPort"
       | "turnTlsPort"
+      | "cloudflareTurnKeyId"
+      | "cloudflareTurnApiToken"
       | "signalId"
     >,
     validateResumeClaims: (claims: RemoteTicketClaims) => Effect.Effect<boolean, RemoteTokenUnavailableError> = () =>
@@ -224,8 +243,12 @@ export class RemoteTokenService {
       this.#ticketKey = remoteTicketKey;
     }
     this.#sessionSecret = new TextEncoder().encode(config.sessionSecret);
+    this.#fetch = fetch;
     this.#signalId = config.signalId;
+    this.#turnProvider = config.turnProvider;
     this.#turnSecret = config.turnSecret;
+    this.#cloudflareTurnKeyId = config.cloudflareTurnKeyId;
+    this.#cloudflareTurnApiToken = config.cloudflareTurnApiToken;
     const localTurnHost = config.turnHosts[0] ?? "";
     this.#turnHost = options.turnHost ?? (() => localTurnHost);
     this.#turnPort = config.turnPort;
@@ -496,11 +519,21 @@ export class RemoteTokenService {
     }),
   );
 
-  iceServers(claims: RemoteTicketClaims, nowSeconds = Math.floor(Date.now() / 1_000)): IceServer[] {
+  iceServers(
+    claims: RemoteTicketClaims,
+    nowSeconds = Math.floor(Date.now() / 1_000),
+  ): Effect.Effect<IceServer[], RemoteTokenError> {
+    if (this.#turnProvider === "cloudflare-realtime") return this.#cloudflareIceServersFor(claims, nowSeconds);
+    return Effect.sync(() => this.#coturnIceServers(claims, nowSeconds));
+  }
+
+  #coturnIceServers(claims: RemoteTicketClaims, nowSeconds: number): IceServer[] {
     const expiration = Math.min(claims.sessionExpiresAt, nowSeconds + SIGNAL_TURN_CREDENTIAL_TTL_SECONDS);
     if (expiration <= nowSeconds) throw new Error("The remote session has expired.");
     const username = `${expiration}:${claims.sessionId}`;
-    const credential = createHmac("sha1", this.#turnSecret).update(username).digest("base64");
+    const credential = createHmac("sha1", this.#turnSecret ?? "")
+      .update(username)
+      .digest("base64");
     const host = this.#turnHost(claims.hostId);
     return [
       { urls: `stun:${host}:${this.#turnPort}` },
@@ -514,6 +547,36 @@ export class RemoteTokenService {
         credential,
       },
     ];
+  }
+
+  #cloudflareIceServersFor(
+    claims: RemoteTicketClaims,
+    nowSeconds: number,
+  ): Effect.Effect<IceServer[], RemoteTokenError> {
+    const cached = this.#cloudflareIceServers.get(claims.sessionId);
+    if (cached && cached.expiresAt > nowSeconds + 60) return Effect.succeed(cached.iceServers);
+    const keyId = this.#cloudflareTurnKeyId;
+    const apiToken = this.#cloudflareTurnApiToken;
+    if (!keyId || !apiToken)
+      return Effect.fail(new RemoteTokenError({ message: "Cloudflare TURN is not configured." }));
+    const ttl = Math.max(60, Math.min(SIGNAL_TURN_CREDENTIAL_TTL_SECONDS, claims.sessionExpiresAt - nowSeconds));
+    return Effect.tryPromise({
+      try: async () => {
+        const response = await this.#fetch(
+          `https://rtc.live.cloudflare.com/v1/turn/keys/${encodeURIComponent(keyId)}/credentials/generate-ice-servers`,
+          {
+            method: "POST",
+            headers: { Authorization: `Bearer ${apiToken}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ ttl }),
+          },
+        );
+        if (!response.ok) throw new Error("Cloudflare TURN credential request failed.");
+        const { iceServers } = cloudflareIceServersResponseSchema.parse(await response.json());
+        this.#cloudflareIceServers.set(claims.sessionId, { expiresAt: nowSeconds + ttl, iceServers });
+        return iceServers;
+      },
+      catch: () => new RemoteTokenError({ message: "Cloudflare TURN credentials are unavailable." }),
+    });
   }
 }
 
