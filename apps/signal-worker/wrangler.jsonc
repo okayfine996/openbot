@@ -13,7 +13,7 @@
   "routes": [],
   "vars": {
     "REMOTE_TICKET_JWKS_URL": "https://openbot-personal-auth-20261115.tianrandailoving.workers.dev/.well-known/jwks.json",
-    "TURN_PROVIDER": "disabled",
+    "TURN_PROVIDER": "cloudflare-realtime",
     "REMOTE_CONTROL_PLANE_URL": "https://openbot-personal-auth-20261115.tianrandailoving.workers.dev"
   },
   "secrets": {
