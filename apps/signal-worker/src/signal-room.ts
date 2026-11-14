@@ -1,4 +1,5 @@
 import type { RemoteAuthEvent } from "@openbot/contracts/signal-protocol/auth-events";
+import { DISCORD_UPLOAD_BYTES_LIMIT } from "@openbot/contracts/signal-protocol/discord-api";
 import { DISCORD_ROUTE_AUDIENCE } from "@openbot/contracts/signal-protocol/discord-route";
 import { GITHUB_ROUTE_AUDIENCE } from "@openbot/contracts/signal-protocol/github-route";
 import {
@@ -420,13 +421,40 @@ export class SignalRoom {
     const peer = this.#discordSessions.get(token);
     if (!peer || peer.socket.readyState !== WebSocket.OPEN)
       return Response.json({ error: { code: "unauthorized" } }, { status: 401 });
-    const input = await request.json().catch(() => null);
+    const parsed = await readDiscordRequest(request);
+    const input = parsed?.input ?? null;
     if (!isRecord(input) || typeof input.op !== "string" || typeof input.guildId !== "string")
       return Response.json({ error: { code: "invalid_request" } }, { status: 400 });
     if (!peer.discordGuilds.has(input.guildId))
       return Response.json({ error: { code: "unknown_guild" } }, { status: 404 });
     const botToken = this.#env.DISCORD_BOT_TOKEN;
     if (!botToken) return Response.json({ error: { code: "unavailable" } }, { status: 503 });
+    if (input.op === "upload") {
+      if (!parsed?.file || typeof input.channelId !== "string" || typeof input.filename !== "string")
+        return Response.json({ error: { code: "invalid_request" } }, { status: 400 });
+      if (parsed.file.size === 0 || parsed.file.size > DISCORD_UPLOAD_BYTES_LIMIT)
+        return Response.json({ error: { code: "invalid_request" } }, { status: 413 });
+      const form = new FormData();
+      form.set(
+        "payload_json",
+        JSON.stringify({
+          allowed_mentions: { parse: ["users"], replied_user: false },
+          ...(typeof input.replyTo === "string"
+            ? { message_reference: { message_id: input.replyTo, fail_if_not_exists: false } }
+            : {}),
+        }),
+      );
+      form.set("files[0]", parsed.file, input.filename);
+      const response = await fetch(`https://discord.com/api/v10/channels/${input.channelId}/messages`, {
+        method: "POST",
+        headers: { Authorization: `Bot ${botToken}` },
+        body: form,
+      });
+      const value = await response.json().catch(() => null);
+      if (!response.ok)
+        return Response.json({ error: { code: discordErrorCode(response.status) } }, { status: response.status });
+      return Response.json(discordRestResult(input, value), { status: 200 });
+    }
     const mapped = discordRestRequest(input);
     if (!mapped) return Response.json({ error: { code: "invalid_request" } }, { status: 400 });
     try {
@@ -1344,6 +1372,29 @@ type DiscordMappedRequest = {
   body?: unknown;
 };
 
+type DiscordRequestInput = { input: { [key: string]: unknown }; file?: File };
+
+async function readDiscordRequest(request: Request): Promise<DiscordRequestInput | null> {
+  const contentType = request.headers.get("Content-Type")?.toLowerCase() ?? "";
+  if (!contentType.startsWith("multipart/form-data")) {
+    const input = await request.json().catch(() => null);
+    return isRecord(input) ? { input } : null;
+  }
+  const form = await request.formData().catch(() => null);
+  if (!form) return null;
+  const requestPart = form.get("request");
+  if (typeof requestPart !== "string") return null;
+  let input: unknown;
+  try {
+    input = JSON.parse(requestPart);
+  } catch {
+    return null;
+  }
+  if (!isRecord(input)) return null;
+  const file = form.get("file");
+  return { input, ...(file instanceof File ? { file } : {}) };
+}
+
 function discordRestRequest(input: { [key: string]: unknown }): DiscordMappedRequest | null {
   const guildId = typeof input.guildId === "string" ? input.guildId : null;
   if (!guildId) return null;
@@ -1439,7 +1490,8 @@ type DiscordRestChannel = { id: string; name: string; kind: "channel" | "thread"
 type DiscordRestRole = { id: string; name: string };
 
 function discordRestResult(input: { [key: string]: unknown }, value: unknown): DiscordRestResult {
-  if (input.op === "createMessage" && isRecord(value) && typeof value.id === "string") return { messageId: value.id };
+  if ((input.op === "createMessage" || input.op === "upload") && isRecord(value) && typeof value.id === "string")
+    return { messageId: value.id };
   if (input.op === "member" && isRecord(value) && isRecord(value.user))
     return { name: String(value.nick ?? value.user.global_name ?? value.user.username ?? "") };
   if (input.op === "channel" && isRecord(value)) return { name: typeof value.name === "string" ? value.name : "" };
