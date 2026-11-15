@@ -22,7 +22,8 @@ ENV['RCT_HERMES_V1_ENABLED'] ||= '0' if podfile_properties['expo.useHermesV1'] =
 # (e.g. EXPO_USE_PRECOMPILED_MODULES exported by EAS Build), so force-disable here before the default.
 ENV['EXPO_USE_PRECOMPILED_MODULES'] = '0' if podfile_properties['EXPO_USE_PRECOMPILED_MODULES'] == 'false'
 ENV['EXPO_USE_PRECOMPILED_MODULES'] ||= '1'
-platform :ios, podfile_properties['ios.deploymentTarget'] || '16.4'
+ios_deployment_target = podfile_properties['ios.deploymentTarget'] || '16.4'
+platform :ios, ios_deployment_target
 
 prepare_react_native_project!
 
@@ -67,6 +68,12 @@ target 'OpenBot' do
       :mac_catalyst_enabled => false,
       :ccache_enabled => ccache_enabled?(podfile_properties),
     )
+
+    installer.pods_project.targets.each do |pod_target|
+      pod_target.build_configurations.each do |build_configuration|
+        build_configuration.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = ios_deployment_target
+      end
+    end
   end
 
 end
