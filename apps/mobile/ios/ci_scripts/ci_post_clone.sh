@@ -42,4 +42,7 @@ echo "Using CocoaPods $(pod --version)."
 
 bun install --frozen-lockfile --filter @openbot/mobile
 cd "$REPO_ROOT/apps/mobile/ios"
-pod install --deployment
+# The Expo podspec checksums vary with the Xcode Cloud environment even when the
+# locked pod versions are unchanged. Keep the Podfile.lock versions, but let
+# CocoaPods refresh those environment-dependent checksums for this build.
+pod install
