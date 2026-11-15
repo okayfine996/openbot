@@ -1,0 +1,9 @@
+{
+  "id" : "3a9e6041-11fb-4b18-b926-7ea2dd191916",
+  "targets" : [
+    {
+      "id" : "e98299a5-7a5b-40b4-a9f6-0fdcd2bd8395",
+      "name" : "OpenBot"
+    }
+  ]
+}
